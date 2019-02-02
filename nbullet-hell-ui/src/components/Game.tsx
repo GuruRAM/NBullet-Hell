@@ -19,6 +19,7 @@ export class Game extends Component<IProps> {
   }
 
   componentWillUnmount() {
+    this.phaserGame!.destroy(true);
     //disposing the phaser canvas
   }
   render() {
