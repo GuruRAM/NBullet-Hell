@@ -4,8 +4,8 @@ import { MainScene } from "./main-scene"
 export const createGame = (parent: HTMLElement) => new Phaser.Game({
     parent: parent,
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: parent.clientWidth,
+    height: parent.clientHeight,
     scene: [MainScene],
     physics: {
         default: 'arcade',

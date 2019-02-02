@@ -25,13 +25,14 @@ export class Enemies {
     addEnemy(x: number, y: number, texture: string, behaviour: Behaviour) {
         // replace with sprites
         const enemy = new Enemy(behaviour, this.scene, x, y, texture);
-        enemy.setCollideWorldBounds(true);
         this.group.add(enemy, true);
+        enemy.setBounce(0.1, 0.1);
+        enemy.setCollideWorldBounds(true);
     }
 
     addRandomTrackingEnemy(x: number, y: number, texture: string, velocity: number, angularVelocity: number, trackingVelocity: number, accuracy: number) {
-        const enemy = new Enemy(createTrackingRandomBehaviour(this.player, trackingVelocity, accuracy, velocity, angularVelocity), this.scene, x, y, texture);
-        this.group.add(enemy, true);
+        const behaviour = createTrackingRandomBehaviour(this.player, trackingVelocity, accuracy, velocity, angularVelocity);
+        this.addEnemy(x, y, texture, behaviour);
     }
 
     update() {
@@ -70,7 +71,6 @@ export class Enemies {
         this.subscription.unsubscribe();
     }
 }
-
 
 export type ControlledObject = Phaser.Physics.Arcade.Image;/* Phaser.GameObjects.Components.Transform & Phaser.Physics.Arcade.Components.Velocity
     & Phaser.Physics.Arcade.Components.Angular & Phaser.Physics.Arcade.Components.Acceleration;

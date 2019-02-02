@@ -1,6 +1,6 @@
 import { Component, ChangeEvent } from "react";
-import { configService } from "../services/config-service";
 import React from 'react'
+import { apiService } from "../services/api-service";
 
 interface IProps {
     onPlayerCreated: (name: string) => void;
@@ -45,10 +45,7 @@ export class Register extends Component<IProps, IState> {
         if (this.isValid()) {
             this.setState({ validationError: '' });
 
-            fetch(`${configService.getUri()}\\Player\\${this.state.playerName}`, {
-                method: "PUT",
-                mode: "cors", //workaround for the development environment
-            })
+            apiService.registerPlayer(this.state.playerName)
             .then(response => {
                 this.props.onPlayerCreated(this.state.playerName);
             })

@@ -15,9 +15,9 @@ import {
 } from './reducer';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { configService } from './services/config-service';
 import { Player, Game as GameModel } from './models/models';
 import { history } from './store';
+import { apiService } from './services/api-service';
 
 const mapStateToProps = (state: GlobalState) => {
   return {
@@ -26,11 +26,6 @@ const mapStateToProps = (state: GlobalState) => {
   };
 };
 
-/*
-const mapDispatchToProps = (dispatch: Dispatch<UserLoginAction>) => {
-  onPlayerCreated: ()countersActions.increment,
-};
-*/
 interface IProps {
   dispatch: Dispatch<UserLoginAction|GameFinishedAction|AppLoadAction>,
   player: Player | null,
@@ -45,7 +40,7 @@ class App extends Component<IProps> {
   render() {
     if (this.props.appLoaded) {
       return (
-        <div className="App">
+        <div className="App full-v">
           <Switch>
             <Route path="/register" render={(props) => <Register onPlayerCreated={(name) => this.onPlayerCreated(name)} {...props} /> } />
             { this.props.player == null && <Redirect to='/register'/> }
@@ -67,11 +62,7 @@ class App extends Component<IProps> {
   }
 
   onPlayerCreated(name: string) {
-    fetch(`${configService.getUri()}\\Player\\${name}`,{
-      method: "GET",
-      mode: "cors", //workaround for the development environment
-    })
-    .then((response: Response) => response.json())
+    apiService.getPlayer(name)
     .then((player: Player) => { 
       this.props.dispatch({type: USER_LOGIN, player: player});
       history.push('/');
@@ -85,15 +76,7 @@ class App extends Component<IProps> {
   }
 
   onGameFinished(game: GameModel) {
-    fetch(`${configService.getUri()}\\Game\\${this.props.player!.name}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      method: "PUT",
-      mode: "cors", //workaround for the development environment
-      body: JSON.stringify(game)
-    })
+    apiService.saveGame(this.props.player!.name, game)
     .then((response: Response) => {
         this.props.dispatch({type: GAME_FINISHED, game: game});
     })

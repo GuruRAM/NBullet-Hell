@@ -30,7 +30,7 @@ export class MainScene extends Phaser.Scene {
 
         this.player = this.physics.add.image(256, 256, 'starfighter');
         this.player.setScale(0.1, 0.1);
-        this.player.setBounce(0.2);
+        this.player.setBounce(0.1, 0.1);
         this.player.setCollideWorldBounds(true);
 
         this.physics.add.collider(this.player, platforms);

@@ -3,6 +3,7 @@ import { Game as GameModel } from "../models/models";
 import Phaser from "phaser"
 import React from 'react'
 import { createGame } from "../phaser-game/main-game";
+import './Game.css';
 
 interface IProps extends React.Props<any> {
   onGameFinished: (game: GameModel) => void;
@@ -24,8 +25,8 @@ export class Game extends Component<IProps> {
   }
   render() {
     return (
-      <div>
-        <div className="canvas-container" ref={this.canvasRef}>
+      <div className="full-v">
+        <div className="canvas-container full-v" ref={this.canvasRef}>
         </div>
         <p><input type='button' value='Finish Game' onClick={(e) => { this.props.onGameFinished(this.finishGame()); e.preventDefault(); }}></input></p>
       </div>
