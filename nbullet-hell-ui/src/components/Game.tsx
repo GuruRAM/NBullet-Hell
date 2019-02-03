@@ -12,16 +12,24 @@ interface IProps extends React.Props<any> {
 export class Game extends Component<IProps> {
   state =  { startDate: new Date() };
   canvasRef = React.createRef<HTMLDivElement>();
-  phaserGame: Phaser.Game | null = null;
-
+  phaserGame!: Phaser.Game;
+  constructor(props: Readonly<IProps>) {
+    super(props);
+    this.updateGameSize = this.updateGameSize.bind(this);
+  }
   componentDidMount() {
     //mounting the phaser canvas
       this.phaserGame = createGame(this.canvasRef.current!);
+      window.addEventListener('resize', this.updateGameSize);
   }
 
   componentWillUnmount() {
     this.phaserGame!.destroy(true);
-    //disposing the phaser canvas
+    window.removeEventListener('resize', this.updateGameSize);
+  }
+
+  updateGameSize() {
+    this.phaserGame.resize(this.canvasRef.current!.clientWidth, this.canvasRef.current!.clientHeight);
   }
   render() {
     return (

@@ -18,6 +18,12 @@ export class MainScene extends Phaser.Scene {
     }
 
     create() {
+        this.events.on('resize', () => {
+            this.cameras.resize(this.sys.canvas.width, this.sys.canvas.height);
+            this.physics.world.setBounds(0, 0, this.sys.canvas.width, this.sys.canvas.height, true, true, true, true);
+            // this.cameras.main.setBounds(0, 0, width, height);
+        }, this);
+
         this.add.image(400, 300, 'background');
         this.add.group()
         const platforms = this.physics.add.staticGroup();
