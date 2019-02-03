@@ -1,6 +1,6 @@
 import Phaser from "phaser"
 import { Weapon } from "./weapon";
-import { Enemies } from "./enemies";
+import { Enemies, createRandomBehaviour, createTrackingBehaviour, createEnemyFiringBehaviour } from "./enemies";
 
 
 export class MainScene extends Phaser.Scene {
@@ -12,9 +12,10 @@ export class MainScene extends Phaser.Scene {
     preload() {
         this.load.image('background', process.env.PUBLIC_URL + '/assets/background.png');
         this.load.image('ground', process.env.PUBLIC_URL + '/assets/platform.png');
-        this.load.image('bomb', process.env.PUBLIC_URL + '/assets/bomb.png');
+        this.load.image('enemy1', process.env.PUBLIC_URL + '/assets/enemy1.png');
         this.load.image('starfighter', process.env.PUBLIC_URL + '/assets/starfighter.png');
-        this.load.image('laser', process.env.PUBLIC_URL + '/assets/laser.png');
+        this.load.image('MegaLaser', process.env.PUBLIC_URL + '/assets/MegaLaser.png');
+        this.load.image('EnemyProjectile1', process.env.PUBLIC_URL + '/assets/EnemyProjectile1.png');
     }
 
     create() {
@@ -40,14 +41,32 @@ export class MainScene extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
 
         this.physics.add.collider(this.player, platforms);
-        this.weapon = new Weapon(this.player, 5, 'laser', this);
+        this.weapon = new Weapon(this.player, 5, 'MegaLaser', this, 0.5);
         this.weapon.create();
         this.weapon.setCollider(platforms);
 
+        const createEnemy = (x: number, y: number) => {
+            const enemy = this.enemies.addEnemy(x, y, 'enemy1', 0.2)
+                .addBehaviour(createRandomBehaviour(0, 0))
+                .addBehaviour(createTrackingBehaviour(this.player, 2, 0.05));
+
+            enemy.addBehaviour(createEnemyFiringBehaviour(enemy, 1, 'EnemyProjectile1', this, 1, (weapon) => {
+            weapon.setCollider(platforms);
+            
+            const onHit: ArcadePhysicsCallback = (projectile, player) => {
+                    projectile.setActive(false);
+                    console.log('You are dead!');
+                }
+                this.physics.add.collider(weapon.group, this.player, onHit);
+                this.physics.add.overlap(weapon.group, this.player, onHit);
+            }));
+        }
+
         this.enemies = new Enemies(this.player, this);
         this.enemies.create();
-        this.enemies.addRandomTrackingEnemy(200, 200, 'bomb', 150, 3, 2, 0.01);
-        this.enemies.addRandomTrackingEnemy(100, 100, 'bomb', 300, 3, 2, 0.01);
+        createEnemy(200, 200);
+        createEnemy(100, 100);
+        createEnemy(300, 100);
         this.enemies.setCollider(platforms);
         this.enemies.setBulletCollider(this.weapon.group);
     }
