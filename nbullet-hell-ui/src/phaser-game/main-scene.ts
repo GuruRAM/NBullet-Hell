@@ -9,6 +9,8 @@ export class MainScene extends Phaser.Scene {
     protected lasers: (Phaser.Physics.Arcade.Image | null)[] = [];
     protected weapon!: Weapon;
     protected enemies!: Enemies;
+    protected scoreText!: Phaser.GameObjects.Text;
+    protected score = 0;
     preload() {
         this.load.image('background', process.env.PUBLIC_URL + '/assets/background.png');
         this.load.image('ground', process.env.PUBLIC_URL + '/assets/platform.png');
@@ -36,7 +38,7 @@ export class MainScene extends Phaser.Scene {
         platforms.create(750, 220, 'ground');
 
         this.player = this.physics.add.image(256, 256, 'starfighter');
-        this.player.setScale(0.1, 0.1);
+        this.player.setScale(0.2, 0.2);
         this.player.setBounce(0.1, 0.1);
         this.player.setCollideWorldBounds(true);
 
@@ -54,7 +56,6 @@ export class MainScene extends Phaser.Scene {
             weapon.setCollider(platforms);
             
             const onHit: ArcadePhysicsCallback = (projectile, player) => {
-                    projectile.setActive(false);
                     console.log('You are dead!');
                 }
                 this.physics.add.collider(weapon.group, this.player, onHit);
@@ -69,6 +70,8 @@ export class MainScene extends Phaser.Scene {
         createEnemy(300, 100);
         this.enemies.setCollider(platforms);
         this.enemies.setBulletCollider(this.weapon.group);
+        this.scoreText = this.add.text(16, 16, `Score: ${this.score}`, { fontSize: '32px', fill: '#FFFFFF' });
+        this.enemies.onEnemyKill.subscribe(score => this.score += score);
     }
 
     update() {
@@ -120,5 +123,6 @@ export class MainScene extends Phaser.Scene {
 
         this.weapon.update();
         this.enemies.update();
+        this.scoreText.setText(`Score: ${this.score}`);
     }
 }

@@ -1,24 +1,26 @@
 export class Weapon {
     public group!: Phaser.Physics.Arcade.Group;
     private currentInterval = 0;
+    private isActive = true;
     constructor(private owner: Phaser.Physics.Arcade.Image, private fireInterval: number, private imageKey: string, private scene: Phaser.Scene, private scale: number = 1) {
     }
 
-    private cleanBullets = callEveryEveryN(1000, () => {
-        //clean group bullets
-        const bullets = this.group.children.getArray();
-        bullets.forEach(bullet => {
-            this.group.remove(bullet);
-            bullet.setActive(false);
-            bullet.destroy();
-        });
-    })
-
     create() {
         this.group = this.scene.physics.add.group();
+        //TODO: Move to a global handler
+        this.scene.physics.world.on('worldbounds', (body: Phaser.Physics.Arcade.Body) => {
+            if (this.group.contains(body.gameObject)) {
+                const bullet = body.gameObject;
+                bullet.setActive(false);
+                this.group.remove(bullet);
+                bullet.destroy();
+            }
+        });
     }
 
     fire() {
+        if (!this.isActive)
+            return;
         if (this.currentInterval <= 0) {
             this.currentInterval = this.fireInterval;
             this.innerFire();
@@ -31,6 +33,8 @@ export class Weapon {
         const y = this.owner.y - this.owner.displayHeight * Math.cos(this.owner.rotation);
         const bullet = new Phaser.Physics.Arcade.Image(this.scene, x, y, this.imageKey);
         this.group.add(bullet, true);
+        bullet.setCollideWorldBounds(true);
+        bullet.body.onWorldBounds = true;
         bullet.setScale(this.scale, this.scale);
         bullet.setSize(bullet.displayWidth, bullet.displayHeight);
         bullet.setAngle(this.owner.angle);
@@ -46,12 +50,10 @@ export class Weapon {
 
     update() {
         this.currentInterval = Math.max(0, this.currentInterval - 1);
-        this.cleanBullets();
     }
 
     setCollider(collider: Phaser.GameObjects.Group) {
-        const onHit: ArcadePhysicsCallback = (o1, o2) => {
-            const bullet = collider.contains(o1) ? o2 : o1;
+        const onHit: ArcadePhysicsCallback = (bullet, colliderObject) => {
             bullet.setActive(false);
             this.group.remove(bullet);
             bullet.destroy();
@@ -61,20 +63,8 @@ export class Weapon {
     }
 
     destroy() {
-        this.group.destroy(true);
-    }
-}
+        this.isActive = false;
 
-export const callEveryEveryN = (n: number, func: () => void) => {
-    if (n < 1) throw new Error('n cannot be lower then 1');
-
-    let counter = 1;
-    return () => {
-        if (counter == 1) {
-            counter = n;
-            func();
-        } else {
-            counter--;
-        }
+        //TODO: destroy weapon
     }
 }

@@ -61,13 +61,13 @@ export class Enemies {
             this.onEnemyKill$.next(100);
         }
         this.scene.physics.add.collider(this.group, bullets, eliminationFunc);
-
         //TODO: The score can be calculated twice, fix it later
         this.scene.physics.add.overlap(this.group, bullets, eliminationFunc);
     }
 
     destroy() {
         this.subscription.unsubscribe();
+        this.onEnemyKill$.unsubscribe();
     }
 }
 
@@ -84,7 +84,7 @@ export class Enemy extends Phaser.Physics.Arcade.Image {
     }
 
     public update() {
-        if (this.behaviour)
+        if (this.active && this.behaviour)
             this.behaviour(this, false);
     }
 
@@ -127,12 +127,14 @@ export function createEnemyFiringBehaviour(owner: Phaser.Physics.Arcade.Image, f
 }
 
 function randomBehaviour(velocity: number, baseAngularVelocity: number, controlledObject: ControlledObject, cleanup: boolean): [ControlledObject, boolean] {
-    const currentVelocity = controlledObject.body.velocity;
-    const currentVelocityAngle = Math.atan2(currentVelocity.y, currentVelocity.x);
-    const dif = 2*(Math.random() - 0.5) * baseAngularVelocity
-    const newAngle = currentVelocityAngle + dif;
-    controlledObject.setVelocityX(velocity*Math.cos(newAngle));
-    controlledObject.setVelocityY(velocity*Math.sin(newAngle));
+    if (!cleanup) {
+        const currentVelocity = controlledObject.body.velocity;
+        const currentVelocityAngle = Math.atan2(currentVelocity.y, currentVelocity.x);
+        const dif = 2*(Math.random() - 0.5) * baseAngularVelocity
+        const newAngle = currentVelocityAngle + dif;
+        controlledObject.setVelocityX(velocity*Math.cos(newAngle));
+        controlledObject.setVelocityY(velocity*Math.sin(newAngle));
+    }
     return [controlledObject, cleanup];
 }
 
@@ -143,13 +145,15 @@ function getAngleRadian(obj1: Phaser.GameObjects.Components.Transform, obj2: Pha
 
 //TODO: Not optimal tracking, replace with the optimal solution
 function trackingBehaviour(objectToTrack: Phaser.GameObjects.Components.Transform, angularVelocity: number, accuracy: number, controllerObject: ControlledObject, cleanup: boolean): [ControlledObject, boolean] {
-    const newAngle = (getAngleRadian(controllerObject, objectToTrack) + 2 * Math.PI) % (2*Math.PI);
-    const currentAngle = (controllerObject.rotation + 3 * Math.PI/2) % (2*Math.PI);
-    const dif = (newAngle - currentAngle) % (2*Math.PI);
-    if (Math.abs(dif) <= accuracy) {
-        controllerObject.setAngularVelocity(0);
-    } else {
-        controllerObject.setAngularVelocity((180 / Math.PI) * (dif > 0 ? angularVelocity : -angularVelocity));
+    if (!cleanup) {
+        const newAngle = (getAngleRadian(controllerObject, objectToTrack) + 2 * Math.PI) % (2*Math.PI);
+        const currentAngle = (controllerObject.rotation + 3 * Math.PI/2) % (2*Math.PI);
+        const dif = (newAngle - currentAngle) % (2*Math.PI);
+        if (Math.abs(dif) <= accuracy) {
+            controllerObject.setAngularVelocity(0);
+        } else {
+            controllerObject.setAngularVelocity((180 / Math.PI) * (dif > 0 ? angularVelocity : -angularVelocity));
+        }
     }
     return [controllerObject, cleanup];
 }
