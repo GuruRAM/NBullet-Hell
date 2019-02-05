@@ -64,7 +64,6 @@ export class Weapon {
 
     destroy() {
         this.isActive = false;
-
         //TODO: destroy weapon
     }
 }

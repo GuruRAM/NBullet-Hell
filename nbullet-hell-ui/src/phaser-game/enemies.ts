@@ -1,3 +1,4 @@
+import { ControlledObject } from './enemies';
 import { Observable, Subject, Subscription, interval } from 'rxjs';
 import { Weapon } from './weapon';
 
@@ -106,6 +107,8 @@ export const createRandomBehaviour = (velocity: number, baseAngularVelocity: num
     (obj: ControlledObject, cleanup: boolean) => randomBehaviour(velocity, baseAngularVelocity, obj, cleanup);
 export const createTrackingBehaviour = (objectToTrack: Phaser.GameObjects.Components.Transform, angularVelocity: number, accuracy: number) => 
     (obj: ControlledObject, cleanup: boolean) => trackingBehaviour(objectToTrack, angularVelocity, accuracy, obj, cleanup);
+export const createRoundMovementBehaviour = (velocity: number, angularAcceleration: number) => 
+    (obj: ControlledObject, cleanup: boolean) => roundMovementBehaviour(velocity, angularAcceleration, obj, cleanup);
 
 export const createTrackingRandomBehaviour = (objectToTrack: Phaser.GameObjects.Components.Transform, trackingAngularVelocity: number, trackingAccuracy: number,
     randomVelocity: number, randomAngularVelocity: number) => (compose(createTrackingBehaviour(objectToTrack, trackingAngularVelocity, trackingAccuracy), createRandomBehaviour(randomVelocity, randomAngularVelocity)))
@@ -154,6 +157,20 @@ function trackingBehaviour(objectToTrack: Phaser.GameObjects.Components.Transfor
         } else {
             controllerObject.setAngularVelocity((180 / Math.PI) * (dif > 0 ? angularVelocity : -angularVelocity));
         }
+    }
+    return [controllerObject, cleanup];
+}
+
+function roundMovementBehaviour(velocity: number, angularAcceleration: number, controllerObject: ControlledObject, cleanup: boolean): [ControlledObject, boolean] {
+    if (!cleanup) {
+        const velocityAngle = controllerObject.body.velocity.angle();
+        const accelerationAngle = velocityAngle + Math.PI / 2;
+        if (controllerObject.body.velocity.length() - velocity < 0.01) {
+            controllerObject.setVelocity(velocity * Math.cos(velocityAngle),
+            velocity * Math.sin(velocityAngle));
+        }
+        controllerObject.setAcceleration(angularAcceleration*Math.cos(accelerationAngle),
+            angularAcceleration*Math.sin(accelerationAngle));
     }
     return [controllerObject, cleanup];
 }
