@@ -22,7 +22,7 @@ export class Register extends Component<IProps, IState> {
       return (
         <div>
             <form>
-                <p>Please enter your name:</p>
+                <p className="first">Please enter your name:</p>
                 <input name="player-name" type="text" value={this.state.playerName} onChange={(e) => this.updatePlayerNameValue(e)}></input>
                 <input name="register" type="button" value="GO" onClick={(e) => { this.register(); e.preventDefault();}}></input>
                 {this.state.validationError && <p>{this.state.validationError}</p>}

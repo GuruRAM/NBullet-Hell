@@ -10,7 +10,7 @@ export class ScoreBoard extends Component<IProps> {
     render() {
       return (
         <div>
-          <p><Link className="btn btn-lg btn-success" to={'/game'}>Start</Link></p>
+          <p className="first"><Link className="btn btn-lg btn-success" to={'/game'}>Start</Link></p>
           <p>The score board for {this.props.player.name}</p>
           <div>
             {this.props.player.history.map((x, i) =>

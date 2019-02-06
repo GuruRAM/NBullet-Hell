@@ -2,7 +2,7 @@ export class Weapon {
     public group!: Phaser.Physics.Arcade.Group;
     private currentInterval = 0;
     private isActive = true;
-    constructor(private owner: Phaser.Physics.Arcade.Image, private fireInterval: number, private imageKey: string, private scene: Phaser.Scene, private scale: number = 1) {
+    constructor(private owner: Phaser.Physics.Arcade.Image, private fireInterval: number, private imageKey: string, private scene: Phaser.Scene, private scale: number = 1, private projectileSpeed = 300) {
     }
 
     create() {
@@ -32,15 +32,14 @@ export class Weapon {
         const x = this.owner.x + this.owner.displayHeight * Math.sin(this.owner.rotation);
         const y = this.owner.y - this.owner.displayHeight * Math.cos(this.owner.rotation);
         const bullet = new Phaser.Physics.Arcade.Image(this.scene, x, y, this.imageKey);
+        bullet.setScale(this.scale, this.scale);
         this.group.add(bullet, true);
         bullet.setCollideWorldBounds(true);
         bullet.body.onWorldBounds = true;
-        bullet.setScale(this.scale, this.scale);
-        bullet.setSize(bullet.displayWidth, bullet.displayHeight);
         bullet.setAngle(this.owner.angle);
 
-        const baseVelocity = 500;
-        const baseAccelerration = 1000;
+        const baseVelocity = this.projectileSpeed;
+        const baseAccelerration = 0;
 
         bullet.setVelocityX(baseVelocity * Math.sin(bullet.rotation));
         bullet.setVelocityY(-(baseVelocity * Math.cos(bullet.rotation)));

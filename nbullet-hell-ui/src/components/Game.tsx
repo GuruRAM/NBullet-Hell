@@ -16,14 +16,17 @@ export class Game extends Component<IProps> {
   constructor(props: Readonly<IProps>) {
     super(props);
     this.updateGameSize = this.updateGameSize.bind(this);
+    this.finishGame = this.finishGame.bind(this);
   }
   componentDidMount() {
-    //mounting the phaser canvas
+      //mounting the phaser canvas
       this.phaserGame = createGame(this.canvasRef.current!);
       window.addEventListener('resize', this.updateGameSize);
+      this.phaserGame.events.addListener('game-finished', this.finishGame);
   }
 
   componentWillUnmount() {
+    this.phaserGame.events.removeAllListeners('game-finished');
     this.phaserGame!.destroy(true);
     window.removeEventListener('resize', this.updateGameSize);
   }
@@ -36,17 +39,18 @@ export class Game extends Component<IProps> {
       <div className="full-v">
         <div className="canvas-container full-v" ref={this.canvasRef}>
         </div>
-        <p><input type='button' value='Finish Game' onClick={(e) => { this.props.onGameFinished(this.finishGame()); e.preventDefault(); }}></input></p>
       </div>
     );
   }
 
-  finishGame() {
+  finishGame(score: number) {
     const finishDate = new Date();
-    return {
-      score: finishDate.getSeconds(),
+    const result = {
+      score: score,
       startTime : this.state.startDate,
       endTime : finishDate
     }
+
+    this.props.onGameFinished(result);
   }
 }
