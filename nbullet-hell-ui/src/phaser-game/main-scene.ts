@@ -9,6 +9,7 @@ export class MainScene extends Phaser.Scene {
     protected cursor: Phaser.Input.Keyboard.CursorKeys = null!;
     protected player: Player = null!;
     protected lasers: (Phaser.Physics.Arcade.Image | null)[] = [];
+    protected healthBar!: Phaser.GameObjects.Image;
     protected weapon!: Weapon;
     protected enemies!: Enemies;
     protected scoreText!: Phaser.GameObjects.Text;
@@ -34,6 +35,7 @@ export class MainScene extends Phaser.Scene {
             this.physics.world.setBounds(0, 0, this.sys.canvas.width, this.sys.canvas.height, true, true, true, true);
             // this.cameras.main.setBounds(0, 0, width, height);
             this.resizeGameOverText();
+            this.resizeHealthBar();
         }, this);
 
         document.addEventListener("keydown", this.onKeydown);
@@ -41,15 +43,20 @@ export class MainScene extends Phaser.Scene {
             document.removeEventListener("keydown", this.onKeydown);
         });
 
-        this.add.image(400, 300, 'background');
+        this.add.image(0, 0, 'background');
         this.player = new Player(this, 256, 256, 'starfighter');
-        this.player.setHealth(3);
+        this.player.setHealth(5, 5);
         this.player.setScale(0.2, 0.2);
-        this.add.existing(this.player);
-        this.physics.add.existing(this.player);
+        this.player.height = this.player.displayHeight;
+        this.player.width = this.player.displayWidth;
+        this.sys.displayList.add(this.player);
+        this.physics.world.enable(this.player);
         this.player.setActive(true);
         this.player.setBounce(0.1, 0.1);
         this.player.setCollideWorldBounds(true);
+        this.healthBar = this.add.image(0, 0, "ground");
+        this.healthBar.setScale(1, 0.3);
+        this.resizeHealthBar();
 
         this.weapon = new Weapon(this.player, 10, 'MegaLaser', this, 0.5, 600);
         this.weapon.create();
@@ -64,6 +71,7 @@ export class MainScene extends Phaser.Scene {
                     const playerObject = <Player>(this.player == player ? player : projectile);
                     const projectileObject = playerObject != projectile ? projectile : player;
                     playerObject.hitWithBullet();
+                    this.resizeHealthBar();
                     if (playerObject.isFinished())
                     {
                         this.gameOver = this.add.text(0, 0, `GAME OVER`, { fontSize: '72px', fill: '#FFFFFF' });
@@ -181,6 +189,17 @@ export class MainScene extends Phaser.Scene {
         this.gameOver.y = centerY - this.gameOver.height;
         this.continue.x = centerX - this.continue.width/2;
         this.continue.y = this.gameOver.y + 2*this.gameOver.height;
+    }
+
+    resizeHealthBar() {
+        const healthRatio = this.player.getHealth()/this.player.getMaxHealth();
+        this.healthBar.displayWidth = this.healthBar.width * healthRatio;
+
+        const centerX = this.physics.world.bounds.centerX;
+        const height = this.physics.world.bounds.height;
+
+        this.healthBar.x = centerX - (this.healthBar.width - this.healthBar.displayWidth)/2;// - this.healthBar.width/2;
+        this.healthBar.y = height - 3 * this.healthBar.displayHeight;
     }
 
     //NOTE: the input logic will be changed in Phaser 3.16.1
