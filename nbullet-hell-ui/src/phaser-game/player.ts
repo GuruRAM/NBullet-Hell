@@ -1,6 +1,9 @@
+import { Weapon } from "./weapon";
+
 export class Player extends Phaser.Physics.Arcade.Image {
     private health: number = 1;
     private maxHealth: number = 1;
+    public weapon!: Weapon;
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, frame?: string | integer) {
         super(scene, x, y, texture, frame);
     }

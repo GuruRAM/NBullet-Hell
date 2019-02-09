@@ -10,7 +10,6 @@ export const createGame = (parent: HTMLElement) => new Phaser.Game({
     physics: {
         default: 'arcade',
         arcade: {
-//            gravity: { y: 300 },
             debug: false
         }
     },

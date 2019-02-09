@@ -1,20 +1,14 @@
 import { ControlledObject } from './enemies';
-import { Observable, Subject, Subscription, interval } from 'rxjs';
+import { Subject, Subscription, interval } from 'rxjs';
 import { Weapon } from './weapon';
+import { compose } from '../utils';
 
 export class Enemies {
-    private onEnemyKill$: Subject<number>;
-    private onEnemyKillObservable: Observable<number>;
-    private group!: Phaser.Physics.Arcade.Group;
+    public group!: Phaser.Physics.Arcade.Group;
     private subscription: Subscription;
     private canUpdate = true;
-    public get onEnemyKill() {
-        return this.onEnemyKillObservable;
-    }
 
     constructor(private player: Phaser.Physics.Arcade.Image, private scene: Phaser.Scene) {
-        this.onEnemyKill$ = new Subject<number>();
-        this.onEnemyKillObservable = this.onEnemyKill$.asObservable();
         this.subscription = interval(300).subscribe(() => {
             this.canUpdate = true;
         })
@@ -49,26 +43,12 @@ export class Enemies {
         this.scene.physics.add.collider(this.group, collider);
     }
 
-    setBulletCollider(bullets: Phaser.GameObjects.Group) {
-        const eliminationFunc: ArcadePhysicsCallback = (o1, o2) => {
-            // both bullet and a enemy should be eliminated
-            o1.setActive(false);
-            o2.setActive(false);
-            this.group.remove(o1);
-            bullets.remove(o2);
-            o1.destroy();
-            o2.destroy();
-            // All enemies yield 100 points
-            this.onEnemyKill$.next(100);
-        }
-        this.scene.physics.add.collider(this.group, bullets, eliminationFunc);
-        //TODO: The score can be calculated twice, fix it later
-        this.scene.physics.add.overlap(this.group, bullets, eliminationFunc);
-    }
-
     destroy() {
         this.subscription.unsubscribe();
-        this.onEnemyKill$.unsubscribe();
+    }
+
+    isAlive() {
+        return this.group.countActive() != 0;
     }
 }
 
@@ -113,11 +93,8 @@ export const createRoundMovementBehaviour = (velocity: number, angularAccelerati
 export const createTrackingRandomBehaviour = (objectToTrack: Phaser.GameObjects.Components.Transform, trackingAngularVelocity: number, trackingAccuracy: number,
     randomVelocity: number, randomAngularVelocity: number) => (compose(createTrackingBehaviour(objectToTrack, trackingAngularVelocity, trackingAccuracy), createRandomBehaviour(randomVelocity, randomAngularVelocity)))
 
-export function createEnemyFiringBehaviour(owner: Phaser.Physics.Arcade.Image, fireInterval: number,
-    imageKey: string, scene: Phaser.Scene, scale: number, calibrateWeapon: (weapon: Weapon) => void = () => {}) : Behaviour {
-    const weapon = new Weapon(owner, fireInterval, imageKey, scene, scale);
-    weapon.create();
-    calibrateWeapon(weapon);
+export function createEnemyFiringBehaviour(weaponFactory: () => Weapon) : Behaviour {
+    const weapon = weaponFactory();
     return (obj: ControlledObject, cleanup: boolean) : [ControlledObject, boolean] => {
         if (cleanup) {
             weapon.destroy();
@@ -173,11 +150,4 @@ function roundMovementBehaviour(velocity: number, angularAcceleration: number, c
             angularAcceleration*Math.sin(accelerationAngle));
     }
     return [controllerObject, cleanup];
-}
-
-export function plapply<T, U extends any[], K>(f: (t: T, ...u: U) => K, t: T) {
-    return (...u: U) => f(t, ...u);
-}
-export function compose<T extends any[], U extends any[], K extends any[]>(f1: (...u: U) => K, f2: (...k: K) => T) : (...u: U) => T {
-    return (...u: U) => f2(...f1(...u));
 }

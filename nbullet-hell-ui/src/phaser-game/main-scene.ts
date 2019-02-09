@@ -1,16 +1,16 @@
-import Phaser from "phaser"
+import Phaser, { GameObjects } from "phaser"
 import { Weapon } from "./weapon";
 import { Enemies, createRandomBehaviour, createTrackingBehaviour, createEnemyFiringBehaviour, createRoundMovementBehaviour } from "./enemies";
 import { Player } from "./player";
 import { timer } from "rxjs";
+import { PlayerManager } from './playerManager';
+import { plapply } from "../utils";
 
 
 export class MainScene extends Phaser.Scene {
+    protected playerManager: PlayerManager = new PlayerManager(this);
     protected cursor: Phaser.Input.Keyboard.CursorKeys = null!;
     protected player: Player = null!;
-    protected lasers: (Phaser.Physics.Arcade.Image | null)[] = [];
-    protected healthBar!: Phaser.GameObjects.Image;
-    protected weapon!: Weapon;
     protected enemies!: Enemies;
     protected scoreText!: Phaser.GameObjects.Text;
     protected score = 0;
@@ -27,80 +27,78 @@ export class MainScene extends Phaser.Scene {
         this.load.image('starfighter', process.env.PUBLIC_URL + '/assets/starfighter.png');
         this.load.image('MegaLaser', process.env.PUBLIC_URL + '/assets/MegaLaser.png');
         this.load.image('EnemyProjectile1', process.env.PUBLIC_URL + '/assets/EnemyProjectile1.png');
+
+        this.load.spritesheet('explosion', process.env.PUBLIC_URL + '/assets/explosion.png', { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('explosion1', process.env.PUBLIC_URL + '/assets/explosion1.png', { frameWidth: 72, frameHeight: 72 });
+
+        this.load.audio('fire', process.env.PUBLIC_URL + '/assets/fire.mp3');
+        this.load.audio('fire1', process.env.PUBLIC_URL + '/assets/fire1.mp3');
+        this.load.audio('hit', process.env.PUBLIC_URL + '/assets/hit.mp3');
+        this.load.audio('explosion', process.env.PUBLIC_URL + '/assets/explosion.mp3');
+        this.load.audio('lose', process.env.PUBLIC_URL + '/assets/lose.mp3');
+        this.load.audio('background', process.env.PUBLIC_URL + '/assets/background.mp3');
+        this.load.audio('win', process.env.PUBLIC_URL + '/assets/win.mp3');
     }
+
     create() {
         this.onKeydown = this.onKeydown.bind(this);
+        this.sound.play('background', {
+            loop: true,
+            volume: 0.1
+        });
+
         this.events.on('resize', () => {
             this.cameras.resize(this.sys.canvas.width, this.sys.canvas.height);
             this.physics.world.setBounds(0, 0, this.sys.canvas.width, this.sys.canvas.height, true, true, true, true);
             // this.cameras.main.setBounds(0, 0, width, height);
             this.resizeGameOverText();
-            this.resizeHealthBar();
+            this.playerManager.resize();
         }, this);
 
         document.addEventListener("keydown", this.onKeydown);
         this.events.on('destroy', () => {
             document.removeEventListener("keydown", this.onKeydown);
         });
-
         this.add.image(0, 0, 'background');
-        this.player = new Player(this, 256, 256, 'starfighter');
-        this.player.setHealth(5, 5);
-        this.player.setScale(0.2, 0.2);
-        this.player.height = this.player.displayHeight;
-        this.player.width = this.player.displayWidth;
-        this.sys.displayList.add(this.player);
-        this.physics.world.enable(this.player);
-        this.player.setActive(true);
-        this.player.setBounce(0.1, 0.1);
-        this.player.setCollideWorldBounds(true);
-        this.healthBar = this.add.image(0, 0, "ground");
-        this.healthBar.setScale(1, 0.3);
-        this.resizeHealthBar();
 
-        this.weapon = new Weapon(this.player, 10, 'MegaLaser', this, 0.5, 600);
-        this.weapon.create();
+        this.player = this.playerManager.createPlayer(10);
+        this.createAnimations();
 
         const createTrackingRandomEnemy = (x: number, y: number) => {
             const enemy = this.enemies.addEnemy(x, y, 'enemy1', 0.2)
-                .addBehaviour(createRandomBehaviour(0, 0))
+                .addBehaviour(createRandomBehaviour(200, 0.5))
                 .addBehaviour(createTrackingBehaviour(this.player, 2, 0.05));
 
-            enemy.addBehaviour(createEnemyFiringBehaviour(enemy, 1, 'EnemyProjectile1', this, 2, (weapon) => {
-                const onHit: ArcadePhysicsCallback = (projectile, player) => {
-                    const playerObject = <Player>(this.player == player ? player : projectile);
-                    const projectileObject = playerObject != projectile ? projectile : player;
-                    playerObject.hitWithBullet();
-                    this.resizeHealthBar();
-                    if (playerObject.isFinished())
-                    {
-                        this.gameOver = this.add.text(0, 0, `GAME OVER`, { fontSize: '72px', fill: '#FFFFFF' });
-                        this.continue = this.add.text(0, 0, `Press ENTER to continue!`, { fontSize: '32px', fill: '#FFFFFF' });
-                        this.resizeGameOverText();
-                        //TODO: Capture the ENTER event and exit the game
-                        this.scene.pause();
-                    }
-                    weapon.group.remove(projectileObject);
-                    projectileObject.destroy();
-                }
-
-                this.physics.add.collider(weapon.group, this.player, onHit);
-                this.physics.add.overlap(weapon.group, this.player, onHit);
-
-                //projectiles collisions:
-                const bulletElimination: ArcadePhysicsCallback = (p1, p2) => {
-                    p1.setActive(false);
-                    p2.setActive(false);
-                    this.weapon.group.remove(p1, true, true);
-                    weapon.group.remove(p2, true, true);
-                    p1.destroy();
-                    p2.destroy();
+            enemy.addBehaviour(createEnemyFiringBehaviour(() => {
+                const weapon = new Weapon(enemy, 2, this, {
+                    scale: 2,
+                    velocity: 500,
+                    fireSound: {
+                        key: 'fire1',
+                        volume: 0.01
+                    },
+                    key: 'EnemyProjectile1'
+                });
+                weapon.create();
+                const playerHit = (p: GameObjects.GameObject, b: GameObjects.GameObject) => {
+                    this.onPlayerBulletHit(p, b);
+                    this.explosionWithSound('explosion', 'explosion', 0.3, p, b);
                 };
-                this.physics.add.collider(this.weapon.group, weapon.group, bulletElimination);
-                this.physics.add.overlap(this.weapon.group, weapon.group, bulletElimination);
+                const bulletHit = (o1: GameObjects.GameObject,o2: GameObjects.GameObject) => {
+                    this.onBulletBulletHit(o1, o2);
+                    this.explosionWithSound('explosion1', 'hit', 0.3, o1, o2);
+                };
+                this.physics.add.collider(weapon.group, this.player, playerHit);
+                this.physics.add.overlap(weapon.group, this.player, playerHit);
+
+                this.physics.add.collider(this.player.weapon.group, weapon.group, bulletHit);
+                this.physics.add.overlap(this.player.weapon.group, weapon.group, bulletHit);
+
+                return weapon;
             }));
         }
 
+        /*
         const createRoundTrackingEnemy = (x: number, y: number) => {
             const enemy = this.enemies.addEnemy(x, y, 'enemy1', 0.2)
                 .addBehaviour(createRoundMovementBehaviour(50, 20))
@@ -108,76 +106,118 @@ export class MainScene extends Phaser.Scene {
 
             enemy.addBehaviour(createEnemyFiringBehaviour(enemy, 1, 'EnemyProjectile1', this, 3, (weapon) => {
             }));
-        }
+        }*/
 
         this.enemies = new Enemies(this.player, this);
         this.enemies.create();
-        createTrackingRandomEnemy(200, 200);
-        createTrackingRandomEnemy(100, 100);
-        createTrackingRandomEnemy(300, 100);
+        for (let i = 0; i < Phaser.Math.RND.between(10, 40); i++) {
+            createTrackingRandomEnemy(
+                Phaser.Math.RND.between(0, this.physics.world.bounds.width),
+                Phaser.Math.RND.between(0, this.physics.world.bounds.height));
+        }
         //createRoundTrackingEnemy(500, 500);
         //createRoundTrackingEnemy(100, 300);
 
-        this.enemies.setBulletCollider(this.weapon.group);
+        const enemyHit = (o1: GameObjects.GameObject,o2: GameObjects.GameObject) => {
+            this.onEnemyHit(o1, o2);
+            this.explosionWithSound('explosion', 'explosion', 0.3, o1, o2);
+        };
+
+        this.physics.add.collider(this.enemies.group, this.player.weapon.group, enemyHit);
+        this.physics.add.overlap(this.enemies.group, this.player.weapon.group, enemyHit);
+
         this.scoreText = this.add.text(16, 16, `Score: ${this.score}`, { fontSize: '32px', fill: '#FFFFFF' });
-        this.enemies.onEnemyKill.subscribe(score => this.score += score);
+    }
+
+    onPlayerBulletHit(playerObject: GameObjects.GameObject, bulletObject: GameObjects.GameObject) {
+        const player = <Player>(playerObject);
+        const bullet = <Phaser.Physics.Arcade.Image>bulletObject;
+
+        player.hitWithBullet();
+        this.playerManager.resize();
+        if (player.isFinished())
+        {
+            this.gameOverSequence();
+            this.sound.play('lose', { volume: 0.1 });
+        }
+
+        //TODO: remove bullet from the enemy bullets group
+        //weapon.group.remove(projectileObject);
+        bulletObject.destroy(true);
+    }
+
+    onBulletBulletHit(playerBullet: GameObjects.GameObject, enemyBullet: GameObjects.GameObject) {
+        //TODO: remove bullet from the enemy bullets group
+        //weapon.group.remove(projectileObject);
+        const b1 = <Phaser.Physics.Arcade.Image>playerBullet;
+        const b2 = <Phaser.Physics.Arcade.Image>enemyBullet;
+
+        b1.destroy();
+        b2.destroy();
+    }
+
+    onEnemyHit(enemy: GameObjects.GameObject, playerBullet: GameObjects.GameObject) {
+        this.enemies.group.remove(enemy);
+        this.player.weapon.group.remove(playerBullet);
+
+        enemy.destroy();
+        playerBullet.destroy();
+        this.score += 100;
+    }
+
+    explosionWithSound(explosionKey: string, soundKey: string, soundVolume: number, o1: GameObjects.GameObject, o2: GameObjects.GameObject) {
+        const b1 = <Phaser.Physics.Arcade.Image>o1;
+        const b2 = <Phaser.Physics.Arcade.Image>o2;
+        const explosion = this.physics.add.sprite((b1.x + b2.x)/2, (b1.y + b1.y)/2, "explosion1");
+        explosion.play(explosionKey);
+        const timer = this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                timer.destroy();
+                explosion.destroy();
+            }
+        });
+        this.sound.play(soundKey, { volume: soundVolume });
     }
 
     update() {
-        this.updatePlayerControl();
+        this.playerManager.updatePlayerControl(this.isStarted);
         if (!this.isStarted)
             return;
-        this.weapon.update();
+
+        this.player.weapon.update();
         this.enemies.update();
         this.scoreText.setText(`Score: ${this.score}`);
+        if (!this.enemies.isAlive()) {
+
+            const music = this.sound.play('win', { volume: 0.1 });
+            this.gameOverSequence();
+        }
     }
 
-    updatePlayerControl() {
-        const cursor = this.input.keyboard.createCursorKeys();
-        const space = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        const keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-        const keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        const keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-        const keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        
-        if (keyA!.isDown)
-        {
-            this.player.setVelocityX(-250);
-        }
-        else if (keyD!.isDown)
-        {
-            this.player.setVelocityX(250);
-        }
-        else
-        {
-            this.player.setVelocityX(0);
-        }
-    
-        if (keyW!.isDown)
-        {
-            this.player.setVelocityY(-250);
-        }
-        else if (keyS!.isDown)
-        {
-            this.player.setVelocityY(250);
-        }
-        else
-        {
-            this.player.setVelocityY(0);
-        }
+    createAnimations() {
+        this.anims.create({
+            key: 'explosion',
+            frames: this.anims.generateFrameNumbers('explosion', { start: 0, end: 7 }),
+            frameRate: 10,
+            repeat: -1,
+        });
 
-        if (cursor.left!.isDown)
-        {
-            this.player.setAngle(this.player.angle - 3);
-        }
-        else if (cursor.right!.isDown)
-        {
-            this.player.setAngle(this.player.angle + 3);
-        }
+        this.anims.create({
+            key: 'explosion1',
+            frames: this.anims.generateFrameNumbers('explosion1', { start: 0, end: 14 }),
+            frameRate: 24,
+            repeat: -1,
+        });
 
-        if (space.isDown) {
-            this.weapon.fire();
-        }
+    }
+
+    gameOverSequence() {
+        this.gameOver = this.add.text(0, 0, `GAME OVER`, { fontSize: '72px', fill: '#FFFFFF' });
+        this.continue = this.add.text(0, 0, `Press ENTER to continue!`, { fontSize: '32px', fill: '#FFFFFF' });
+        this.resizeGameOverText();
+        //TODO: Capture the ENTER event and exit the game
+        this.scene.pause();
     }
 
     resizeGameOverText() {
@@ -189,17 +229,6 @@ export class MainScene extends Phaser.Scene {
         this.gameOver.y = centerY - this.gameOver.height;
         this.continue.x = centerX - this.continue.width/2;
         this.continue.y = this.gameOver.y + 2*this.gameOver.height;
-    }
-
-    resizeHealthBar() {
-        const healthRatio = this.player.getHealth()/this.player.getMaxHealth();
-        this.healthBar.displayWidth = this.healthBar.width * healthRatio;
-
-        const centerX = this.physics.world.bounds.centerX;
-        const height = this.physics.world.bounds.height;
-
-        this.healthBar.x = centerX - (this.healthBar.width - this.healthBar.displayWidth)/2;// - this.healthBar.width/2;
-        this.healthBar.y = height - 3 * this.healthBar.displayHeight;
     }
 
     //NOTE: the input logic will be changed in Phaser 3.16.1

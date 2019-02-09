@@ -26,7 +26,7 @@ export class ApiService implements IApiService {
         });
     }
     getPlayer(player: string): Promise<Player> {
-        return fetch(`${configService.getUri()}\\Player\\${name}`, {
+        return fetch(`${configService.getUri()}\\Player\\${player}`, {
             method: "GET",
             mode: "cors", //workaround for the development environment
         }).then((response: Response) => response.json());
