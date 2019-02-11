@@ -1,11 +1,11 @@
 import { createLogger } from 'redux-logger'
 import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly'
-import { createBrowserHistory } from 'history'
+import { createHashHistory } from 'history'
 import { applyMiddleware, createStore } from 'redux'
 import { routerMiddleware } from 'connected-react-router'
 import createRootReducer from './reducer'
 
-export const history = createBrowserHistory()
+export const history = createHashHistory()
 
 const myRouterMiddleware = routerMiddleware(history);
 

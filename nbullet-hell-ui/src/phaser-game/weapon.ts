@@ -5,7 +5,7 @@ export class Weapon {
     private currentInterval = 0;
     private isActive = true;
     constructor(private owner: Phaser.Physics.Arcade.Image, private fireInterval: number, 
-        private scene: Phaser.Scene, private bulletConfig: BulletConfig) {
+        private scene: Phaser.Scene, private bulletConfig: BulletConfig, private rotationDif = 0, private startScale: number = 1) {
     }
 
     create() {
@@ -31,14 +31,14 @@ export class Weapon {
 
     //+5 armor
     innerFire() {
-        const x = this.owner.x + this.owner.displayHeight * Math.sin(this.owner.rotation);
-        const y = this.owner.y - this.owner.displayHeight * Math.cos(this.owner.rotation);
+        const x = this.owner.x + this.startScale * (this.owner.displayHeight * Math.sin(this.owner.rotation + this.rotationDif));
+        const y = this.owner.y - this.startScale * (this.owner.displayHeight * Math.cos(this.owner.rotation + this.rotationDif));
         const bullet = new Phaser.Physics.Arcade.Image(this.scene, x, y, this.bulletConfig.key);
         bullet.setScale(this.bulletConfig.scale, this.bulletConfig.scale);
         this.group.add(bullet, true);
         bullet.setCollideWorldBounds(true);
         bullet.body.onWorldBounds = true;
-        bullet.setAngle(this.owner.angle);
+        bullet.setRotation(this.owner.rotation + this.rotationDif);
 
         const baseVelocity = this.bulletConfig.velocity;
 
