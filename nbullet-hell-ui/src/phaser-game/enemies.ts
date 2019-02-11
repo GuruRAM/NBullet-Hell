@@ -6,8 +6,7 @@ import { compose } from '../utils';
 export class Enemies {
     public group!: Phaser.Physics.Arcade.Group;
     private subscription: Subscription;
-    private canUpdate = true;
-
+    private canUpdate = true;    
     constructor(private player: Phaser.Physics.Arcade.Image, private scene: Phaser.Scene) {
         this.subscription = interval(300).subscribe(() => {
             this.canUpdate = true;
@@ -59,6 +58,7 @@ export type ControlledObject = Phaser.Physics.Arcade.Image;/* Phaser.GameObjects
 export type Behaviour = (behaviourObject: ControlledObject, cleanup: boolean) => [ControlledObject, boolean];
 
 export class Enemy extends Phaser.Physics.Arcade.Image {
+    public scorePoints: number = 100;
     constructor(private behaviour: Behaviour = (obj, cleanup) => [obj, cleanup],
         scene: Phaser.Scene, x: number, y: number, texture: string, frame?: string | integer) {
         super(scene, x, y, texture, frame);
