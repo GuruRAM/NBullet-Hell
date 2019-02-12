@@ -1,6 +1,7 @@
 import { BulletConfig } from "./configs";
 
 export class Weapon {
+    public interceptable = true;
     public group!: Phaser.Physics.Arcade.Group;
     private currentInterval = 0;
     private isActive = true;

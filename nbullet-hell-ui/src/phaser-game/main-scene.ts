@@ -41,6 +41,7 @@ export class MainScene extends Phaser.Scene {
         this.load.audio('lose', process.env.PUBLIC_URL + '/assets/lose.mp3');
         this.load.audio('background', process.env.PUBLIC_URL + '/assets/background.mp3');
         this.load.audio('win', process.env.PUBLIC_URL + '/assets/win.mp3');
+        this.load.json('shapes', process.env.PUBLIC_URL + '/assets/shapes.json');
     }
 
     create() {
@@ -130,19 +131,19 @@ export class MainScene extends Phaser.Scene {
 
         for(let i = 1; i < 3; i++) {
             this.time.addEvent({
-                delay: i * 5000,
+                delay: i * 115000,
                 callback: createWave
             });
         }
         this.time.addEvent({
-            delay: 4 * 5000,
+            delay: 4 * 115000,
             callback: createBoss
         });
 
         this.waveText = this.add.text(0, 16, '', { fontSize: '32px', fill: '#FFFFFF' });
         //createRoundTrackingEnemy(500, 500);
         //createRoundTrackingEnemy(100, 300);
-        createWave();
+        createBoss();
         this.physics.add.collider(this.enemies.group, this.player.weapon.group, this.onEnemyHit.bind(this));
         this.physics.add.overlap(this.enemies.group, this.player.weapon.group, this.onEnemyHit.bind(this));
 
@@ -160,12 +161,14 @@ export class MainScene extends Phaser.Scene {
 
     registerBoss(boss: Boss) {
         boss.setImmovable(true);
-        const bossWeaponGroups = boss.getWeaponGroups();
-        this.physics.add.collider(bossWeaponGroups, this.player, this.playerHit);
-        this.physics.add.overlap(bossWeaponGroups, this.player, this.playerHit);
+        const bossWeapons = boss.getWeapons();
+        const interceptableGroups = bossWeapons.filter(i => i.interceptable).map(i => i.group);
+        const allGroups = bossWeapons.map(i => i.group);
+        this.physics.add.collider(allGroups, this.player, this.playerHit);
+        this.physics.add.overlap(allGroups, this.player, this.playerHit);
 
-        this.physics.add.collider(this.player.weapon.group, bossWeaponGroups, this.bulletHit);
-        this.physics.add.overlap(this.player.weapon.group, bossWeaponGroups, this.bulletHit);
+        this.physics.add.collider(this.player.weapon.group, interceptableGroups, this.bulletHit);
+        this.physics.add.overlap(this.player.weapon.group, interceptableGroups, this.bulletHit);
         this.physics.add.collider(this.player, boss);
     }
 

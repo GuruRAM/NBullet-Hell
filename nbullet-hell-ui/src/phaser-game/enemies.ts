@@ -36,6 +36,7 @@ export class Enemies {
         this.group.add(boss, true);
         boss.setBounce(0, 0);
         boss.setCollideWorldBounds(true);
+        boss.showHealth();
         return boss;
     }
 
@@ -43,8 +44,10 @@ export class Enemies {
         let updateDone = false;
         for(let enemy of this.group.getChildren()) {
             const convertedEnemy = <Enemy>enemy;
-            if (convertedEnemy.isBoss())
+            if (convertedEnemy.isBoss()) {
                 convertedEnemy.update();
+                (<Boss>convertedEnemy).resizeHelth();
+            }
             else
             {
                 if (this.canUpdate)
@@ -167,12 +170,14 @@ export class Boss extends Enemy {
         this.weapon315.create();
         this.mainWeapon = new Weapon(this, 6, scene, { ...bulletConfig, key: 'bossLaser' }, 0, 0.5);
         this.mainWeapon.create();
-
+        this.mainWeapon.interceptable = false;
         this.weapons.push(this.weapon45);
         this.weapons.push(this.weapon135);
         this.weapons.push(this.weapon225);
         this.weapons.push(this.weapon315);
         this.weapons.push(this.mainWeapon);
+        const bossShape = this.scene.cache.json.get('shapes').boss;
+        
     }
 
     public update() {
@@ -222,11 +227,32 @@ export class Boss extends Enemy {
         });
     }
 
-    public getWeaponGroups() {
-        return this.weapons.map(item => item.group);
+    public getWeapons() {
+        return [...this.weapons];
     }
 
     public isBoss() { return true; }
+
+    private healthBar: Phaser.GameObjects.Image | undefined;
+    public showHealth() {
+        this.healthBar = this.scene.add.image(0, 0, "ground");
+        this.healthBar.setScale(this.body.width/this.healthBar.width, 0.3);
+        this.resizeHelth();
+    }
+
+    public resizeHelth() {
+        if (!this.healthBar)
+            return;
+        const healthRatio = this.getHealth()/this.getMaxHealth();
+        this.healthBar.displayWidth = this.healthBar.width * healthRatio;
+
+        const centerX = this.body.center.x;
+        const topY = this.body.top - this.healthBar.height;
+        
+        const ratio = this.body.width/this.healthBar.width;
+        this.healthBar.x = centerX - (this.healthBar.width * ratio - this.healthBar.displayWidth)/2;
+        this.healthBar.y = topY;
+    }
 }
 
 export const createRandomBehaviour = (velocity: number, baseAngularVelocity: number) => 
