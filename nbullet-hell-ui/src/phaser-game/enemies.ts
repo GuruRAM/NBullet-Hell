@@ -23,7 +23,8 @@ export class Enemies {
         const enemy = new Enemy(behaviour, this.scene, x, y, texture);
         this.group.add(enemy, true);
         enemy.setScale(scale, scale);
-        enemy.setSize(enemy.displayWidth, enemy.displayHeight);
+//        enemy.setSize(enemy.displayWidth, enemy.displayHeight);
+//        enemy.body.updateCenter();
         enemy.setBounce(0.1, 0.1);
         enemy.setCollideWorldBounds(true);
         return enemy;
@@ -139,6 +140,8 @@ export class Enemy extends Phaser.Physics.Arcade.Image {
     }
 }
 
+
+
 export class Boss extends Enemy {
     protected health = 100;
     protected maxHealth = 100;
@@ -158,7 +161,8 @@ export class Boss extends Enemy {
             },
             key: 'EnemyProjectile1',
             scale: 1,
-            velocity: 600
+            velocity: 600,
+            displayBodyRatio: 1,
         };
         this.weapon45 = new Weapon(this, 4, scene, bulletConfig, 1*Math.PI/4, 0.5);
         this.weapon45.create();
@@ -168,7 +172,7 @@ export class Boss extends Enemy {
         this.weapon225.create();
         this.weapon315 = new Weapon(this, 4, scene, bulletConfig, 7*Math.PI/4, 0.5);
         this.weapon315.create();
-        this.mainWeapon = new Weapon(this, 6, scene, { ...bulletConfig, key: 'bossLaser' }, 0, 0.5);
+        this.mainWeapon = new Weapon(this, 6, scene, { ...bulletConfig, key: 'bossLaser', displayBodyRatio: 2 }, 0, 0.5);
         this.mainWeapon.create();
         this.mainWeapon.interceptable = false;
         this.weapons.push(this.weapon45);
@@ -236,22 +240,22 @@ export class Boss extends Enemy {
     private healthBar: Phaser.GameObjects.Image | undefined;
     public showHealth() {
         this.healthBar = this.scene.add.image(0, 0, "ground");
-        this.healthBar.setScale(this.body.width/this.healthBar.width, 0.3);
+        this.healthBar.setScale(1, 0.3);
+        this.healthBar.rotation = Math.PI/2;
         this.resizeHelth();
     }
 
     public resizeHelth() {
         if (!this.healthBar)
             return;
-        const healthRatio = this.getHealth()/this.getMaxHealth();
-        this.healthBar.displayWidth = this.healthBar.width * healthRatio;
 
         const centerX = this.body.center.x;
-        const topY = this.body.top - this.healthBar.height;
-        
-        const ratio = this.body.width/this.healthBar.width;
-        this.healthBar.x = centerX - (this.healthBar.width * ratio - this.healthBar.displayWidth)/2;
-        this.healthBar.y = topY;
+        const centerY = this.body.center.y;
+
+        const ratio = this.getHealth() / this.getMaxHealth();
+        this.healthBar.displayWidth = ratio * this.height;
+        this.healthBar.x = centerX + this.width / 2;// - (this.healthBar.width * ratio - this.healthBar.displayWidth)/2;
+        this.healthBar.y = centerY + this.height / 2 - this.healthBar.displayWidth / 2;
     }
 }
 

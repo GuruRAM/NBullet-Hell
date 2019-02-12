@@ -6,6 +6,7 @@ import { store, history } from './store';
 import { ConnectedRouter } from 'connected-react-router';
 import { Provider } from 'react-redux';
 import { Route } from 'react-router';
+import 'nes.css/css/nes.css'
 
 ReactDOM.render((
     <Provider store={store}>

@@ -20,12 +20,14 @@ export class Register extends Component<IProps, IState> {
 
     render() {
       return (
-        <div>
+        <div className="first">
             <form>
-                <p className="first">Please enter your name:</p>
-                <input name="player-name" type="text" value={this.state.playerName} onChange={(e) => this.updatePlayerNameValue(e)}></input>
-                <input name="register" type="button" value="GO" onClick={(e) => { this.register(); e.preventDefault();}}></input>
-                {this.state.validationError && <p>{this.state.validationError}</p>}
+                <div className="nes-field">
+                    <label htmlFor="name_field">Please enter your name:</label>
+                    <input type="text" id="name_field" className="nes-input" style={{ marginRight: "12px", maxWidth: "400px", display: "inline-block" }} value={this.state.playerName} onChange={(e) => this.updatePlayerNameValue(e)}></input>
+                    <button style={{display: "inline-block"}}className="nes-btn" onClick={(e) => { this.register(); e.preventDefault();}}>GO</button>
+                    {this.state.validationError && <p>{this.state.validationError}</p>}
+                </div>
             </form>
         </div>
       );

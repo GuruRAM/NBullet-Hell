@@ -86,7 +86,8 @@ export class MainScene extends Phaser.Scene {
                         key: 'fire1',
                         volume: 0.01
                     },
-                    key: 'EnemyProjectile1'
+                    key: 'EnemyProjectile1',
+                    displayBodyRatio: 1
                 });
                 weapon.create();
                 this.physics.add.collider(weapon.group, this.player, this.playerHit);
@@ -131,19 +132,19 @@ export class MainScene extends Phaser.Scene {
 
         for(let i = 1; i < 3; i++) {
             this.time.addEvent({
-                delay: i * 115000,
+                delay: i * 5000,
                 callback: createWave
             });
         }
         this.time.addEvent({
-            delay: 4 * 115000,
+            delay: 4 * 5000,
             callback: createBoss
         });
 
         this.waveText = this.add.text(0, 16, '', { fontSize: '32px', fill: '#FFFFFF' });
         //createRoundTrackingEnemy(500, 500);
         //createRoundTrackingEnemy(100, 300);
-        createBoss();
+        createWave();
         this.physics.add.collider(this.enemies.group, this.player.weapon.group, this.onEnemyHit.bind(this));
         this.physics.add.overlap(this.enemies.group, this.player.weapon.group, this.onEnemyHit.bind(this));
 

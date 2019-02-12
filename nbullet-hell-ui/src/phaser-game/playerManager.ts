@@ -31,7 +31,8 @@ export class PlayerManager {
             key: 'MegaLaser',
             scale: 0.5,
             velocity: 600,
-            fireSound: { key: 'fire', volume: 0.01 }
+            fireSound: { key: 'fire', volume: 0.01 },
+            displayBodyRatio: 2
         });
         this.player.weapon.create();
 
