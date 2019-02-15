@@ -1,6 +1,7 @@
 import { Player } from "./player";
 import { Scene } from "phaser";
 import { Weapon } from "./weapon";
+import { BulletType } from "./configs";
 
 export class PlayerManager {
     constructor(private scene: Scene) {
@@ -16,6 +17,7 @@ export class PlayerManager {
         player.height = player.displayHeight;
         player.width = player.displayWidth;
         this.scene.sys.displayList.add(player);
+        
         this.scene.physics.world.enable(player);
         player.setActive(true);
         player.setBounce(0.1, 0.1);
@@ -24,15 +26,16 @@ export class PlayerManager {
 
         const playerBar = this.scene.add.image(x, y, "ground");
         this.playerBar = playerBar;
+        this.playerBar.setBlendMode(Phaser.BlendModes.ADD);
         this.playerBar.setScale(1, 0.3);
         this.resize();
 
         this.player.weapon = new Weapon(this.player, 5, this.scene, {
             key: 'MegaLaser',
-            scale: 0.5,
+            scale: 0.65,
             velocity: 600,
             fireSound: { key: 'fire', volume: 0.01 },
-            displayBodyRatio: 2
+            bulletType: BulletType.PlayerBullet
         });
         this.player.weapon.create();
 

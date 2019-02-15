@@ -4,6 +4,7 @@ import { Enemies, createRandomBehaviour, createTrackingBehaviour, createEnemyFir
 import { Player } from "./player";
 import { timer } from "rxjs";
 import { PlayerManager } from './playerManager';
+import { BulletType } from "./configs";
 
 export class MainScene extends Phaser.Scene {
     protected playerManager: PlayerManager = new PlayerManager(this);
@@ -87,7 +88,7 @@ export class MainScene extends Phaser.Scene {
                         volume: 0.01
                     },
                     key: 'EnemyProjectile1',
-                    displayBodyRatio: 1
+                    bulletType: BulletType.RoundBullet
                 });
                 weapon.create();
                 this.physics.add.collider(weapon.group, this.player, this.playerHit);

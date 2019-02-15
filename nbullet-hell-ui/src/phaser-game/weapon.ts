@@ -1,4 +1,4 @@
-import { BulletConfig } from "./configs";
+import { BulletConfig, BulletType } from "./configs";
 
 export class Weapon {
     public interceptable = true;
@@ -36,19 +36,39 @@ export class Weapon {
         const y = this.owner.y - this.startScale * (this.owner.displayHeight * Math.cos(this.owner.rotation + this.rotationDif));
         const bullet = new Phaser.Physics.Arcade.Image(this.scene, x, y, this.bulletConfig.key);
         this.group.add(bullet, true);
-        bullet.setScale(this.bulletConfig.scale, this.bulletConfig.scale);
+        const rotation = this.owner.rotation + this.rotationDif;
+        if (this.bulletConfig.bulletType == BulletType.RoundBullet) {
+            const radius = (bullet.body.width + bullet.body.height)/4;
+            const displayBodyRatio = 0.75;
+            //TODO: calculate a proper offset;
+            bullet.body.setCircle(radius*displayBodyRatio, radius*(1-displayBodyRatio), radius*(1-displayBodyRatio));
+            bullet.body.updateCenter();
+        } else if (this.bulletConfig.bulletType == BulletType.PlayerBullet) {
+            const radius = bullet.width / 2;
+            const displayBodyRatio = 0.5;
+            const adjustedRadius = radius * displayBodyRatio;
+            bullet.body.setCircle(adjustedRadius,
+                adjustedRadius + 0.75*radius*Math.sin(rotation),
+                adjustedRadius/2 + 0.75*radius*(1 - Math.cos(rotation)));
+            bullet.body.updateCenter();
+        } else if (this.bulletConfig.bulletType == BulletType.BossMainBullet) {
+            //heightRatio: 0.65
+            //widthRatio: 0.42
+            const bodyWidth = bullet.width * 0.42;
+            const bodyHeight = bullet.height * 0.65;
 
-        //TODO: Adjust player bullets body size and boss body size
-        //const body: any = bullet.body;
-        //body.setSize(bullet.displayWidth/this.bulletConfig.displayBodyRatio, bullet.displayHeight/this.bulletConfig.displayBodyRatio, true);
-        
-        //= bullet.displayWidth / 2;
-        //bullet.displayHeight = bullet.displayHeight / 2;
-        //bullet.body.
+            const actualWidth = bodyWidth + (bodyHeight - bodyWidth) * Math.abs(Math.sin(rotation));
+            const actualHeight = bodyHeight + (bodyWidth - bodyHeight)*(1 - Math.abs(Math.cos(rotation)));
+
+            const body = bullet.body as any;
+            body.setSize(actualWidth, actualHeight, true);
+            bullet.body.updateCenter();
+        }
+        bullet.setScale(this.bulletConfig.scale, this.bulletConfig.scale);
 
         bullet.setCollideWorldBounds(true);
         bullet.body.onWorldBounds = true;
-        bullet.setRotation(this.owner.rotation + this.rotationDif);
+        bullet.setRotation(rotation);
 
         const baseVelocity = this.bulletConfig.velocity;
 

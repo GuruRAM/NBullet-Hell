@@ -3,6 +3,7 @@ import { Subscription, interval } from 'rxjs';
 import { Weapon } from './weapon';
 import { compose } from '../utils';
 import { GameObjects } from 'phaser';
+import { BulletType } from './configs';
 
 export class Enemies {
     public group!: Phaser.Physics.Arcade.Group;
@@ -35,7 +36,8 @@ export class Enemies {
             this.scene.physics.world.bounds.centerX,
             this.scene.physics.world.bounds.centerY);
         this.group.add(boss, true);
-        boss.setBounce(0, 0);
+        boss.body.setCircle(boss.height/2, boss.width/2 - boss.height/2, 0);
+        boss.body.updateCenter();
         boss.setCollideWorldBounds(true);
         boss.showHealth();
         return boss;
@@ -135,6 +137,7 @@ export class Enemy extends Phaser.Physics.Arcade.Image {
         }
     }
 
+
     protected kill() {
         this.destroy();
     }
@@ -162,7 +165,7 @@ export class Boss extends Enemy {
             key: 'EnemyProjectile1',
             scale: 1,
             velocity: 600,
-            displayBodyRatio: 1,
+            bulletType: BulletType.RoundBullet,
         };
         this.weapon45 = new Weapon(this, 4, scene, bulletConfig, 1*Math.PI/4, 0.5);
         this.weapon45.create();
@@ -172,7 +175,7 @@ export class Boss extends Enemy {
         this.weapon225.create();
         this.weapon315 = new Weapon(this, 4, scene, bulletConfig, 7*Math.PI/4, 0.5);
         this.weapon315.create();
-        this.mainWeapon = new Weapon(this, 6, scene, { ...bulletConfig, key: 'bossLaser', displayBodyRatio: 2 }, 0, 0.5);
+        this.mainWeapon = new Weapon(this, 6, scene, { ...bulletConfig, key: 'bossLaser', bulletType: BulletType.BossMainBullet }, 0, 0.5);
         this.mainWeapon.create();
         this.mainWeapon.interceptable = false;
         this.weapons.push(this.weapon45);
@@ -204,6 +207,7 @@ export class Boss extends Enemy {
     }
 
     protected kill() {
+        this.resizeHelth();
         this.setActive(false);
         this.setAngularVelocity(0);
         const event = this.scene.time.addEvent({
@@ -238,8 +242,10 @@ export class Boss extends Enemy {
     public isBoss() { return true; }
 
     private healthBar: Phaser.GameObjects.Image | undefined;
+
     public showHealth() {
         this.healthBar = this.scene.add.image(0, 0, "ground");
+        this.healthBar.setBlendMode(Phaser.BlendModes.ADD);
         this.healthBar.setScale(1, 0.3);
         this.healthBar.rotation = Math.PI/2;
         this.resizeHelth();

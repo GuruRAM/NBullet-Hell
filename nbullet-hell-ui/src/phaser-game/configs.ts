@@ -3,10 +3,17 @@ export type BulletConfig = {
     velocity: number,
     scale: number,
     fireSound: SoundConfig | undefined,
-    displayBodyRatio: number
+    bulletType: BulletType
 }
 
 export type SoundConfig = {
     key: string,
     volume: number
+}
+
+export enum BulletType {
+    NormalBullet,
+    RoundBullet,
+    PlayerBullet,
+    BossMainBullet
 }
