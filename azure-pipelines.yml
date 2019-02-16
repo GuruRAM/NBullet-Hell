@@ -17,14 +17,14 @@ steps:
   displayName: 'Install Node.js'
 
 - script: yarn install
-  workingDirectory: /nbullet-hell-ui
+  workingDirectory: $(System.DefaultWorkingDirectory)/nbullet-hell-ui
   displayName: Install dependencies
 
 - script: yarn build
-  workingDirectory: /nbullet-hell-ui
+  workingDirectory: $(System.DefaultWorkingDirectory)/nbullet-hell-ui
   displayName: Build application
 
 - task: PublishPipelineArtifact@0
   inputs:
     artifactName: 'Bullet hell artifacts' 
-    targetPath: 'nbullet-hell-ui/build'
+    targetPath: $(System.DefaultWorkingDirectory)/nbullet-hell-ui/build
