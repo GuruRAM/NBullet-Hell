@@ -48,7 +48,7 @@ export class Register extends Component<IProps, IState> {
             this.setState({ validationError: '' });
 
             apiService.registerPlayer(this.state.playerName)
-            .then(response => {
+            .then(() => {
                 this.props.onPlayerCreated(this.state.playerName);
             })
             .catch(error => {

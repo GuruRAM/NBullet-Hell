@@ -77,7 +77,7 @@ class App extends Component<IProps> {
 
   onGameFinished(game: GameModel) {
     apiService.saveGame(this.props.player!.name, game)
-    .then((response: Response) => {
+    .then(() => {
         this.props.dispatch({type: GAME_FINISHED, game: game});
     })
     .catch(error => {
