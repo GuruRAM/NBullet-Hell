@@ -1,4 +1,4 @@
-import { SceneScript, EnemyType, EnemyConfig } from "./configs";
+import { SceneScript, EnemyConfig, EnemyType } from "./typesScript";
 
 export const gameScript: SceneScript = {
     playerHealth: 10,

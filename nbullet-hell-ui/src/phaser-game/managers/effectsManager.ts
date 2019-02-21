@@ -1,6 +1,6 @@
-import { MainScene } from './main-scene';
-import { plapply } from '../utils';
-import { OnFireEvent } from './configs';
+import { MainScene } from "../main-scene";
+import { OnFireEvent } from "../configs";
+
 export class EffectsManager {
     private animBulletExplosion = 'explosion1';
     private animCraftExplosion = 'explosion';
@@ -39,12 +39,13 @@ export class EffectsManager {
             key: this.animBulletExplosion,
             frames: this.scene.anims.generateFrameNumbers(this.animBulletExplosion, { start: 0, end: 14 }),
             frameRate: 24,
-            repeat: -1,
+            repeat: -1
         });
     }
 
-    private playAnimation(explosionKey: string, x: number, y: number) {
+    private playAnimation(explosionKey: string, x: number, y: number, scale: number = 1) {
         const explosion = this.scene.physics.add.sprite(x, y, explosionKey);
+        explosion.setScale(scale);
         explosion.play(explosionKey);
         this.scene.time.addEvent({
             delay: 1000,
@@ -54,9 +55,8 @@ export class EffectsManager {
         });
     }
 
-
     public playAnimationBulletsHit(x: number, y: number) {
-        this.playAnimation(this.animBulletExplosion, x, y);
+        this.playAnimation(this.animBulletExplosion, x, y, 0.5);
     }
 
     public playAnimationCraftExplosion(x: number, y: number) {
@@ -97,6 +97,12 @@ export class EffectsManager {
     public playSoundExplosion() {
         this.scene.sound.play(this.soundExplosion, {
             volume: 0.3
+        });
+    }
+
+    public playSoundBossExplosion() {
+        this.scene.sound.play(this.soundExplosion, {
+            volume: 2
         });
     }
 

@@ -18,6 +18,7 @@ import { connect } from 'react-redux';
 import { Player, Game as GameModel } from './models/models';
 import { history } from './store';
 import { apiService } from './services/api-service';
+import { Header } from './components/Header';
 
 const mapStateToProps = (state: GlobalState) => {
   return {
@@ -42,10 +43,11 @@ class App extends Component<IProps> {
       return (
         <div className="App full-v">
           <Switch>
-            <Route path="/register" render={(props) => <Register onPlayerCreated={(name) => this.onPlayerCreated(name)} {...props} /> } />
+            <Route path="/register" render={(props) =>
+              <Header><Register onPlayerCreated={(name) => this.onPlayerCreated(name)} {...props} /></Header> } />
             { this.props.player == null && <Redirect to='/register'/> }
             <Route path="/game" render={(props) => <Game onGameFinished={(game) => this.onGameFinished(game)} {...props}/> } />
-            <Route strict path="/" render={(props) => <ScoreBoard player={this.props.player!} {...props}/> } />
+            <Route strict path="/" render={(props) => <Header><ScoreBoard player={this.props.player!} {...props}/></Header> } />
           </Switch>
         </div>
       );

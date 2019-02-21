@@ -1,6 +1,6 @@
-import { ControlledObject, Behaviour } from "./enemies";
-import { compose } from "../utils";
-import { Weapon } from "./weapon";
+import { ControlledObject, Behaviour } from "../enemies";
+import { compose } from "../../utils";
+import { Weapon } from "../weapons/weapon";
 
 export const createRandomBehaviour = (velocity: number, baseAngularVelocity: number) => 
     (obj: ControlledObject, cleanup: boolean) => randomBehaviour(velocity, baseAngularVelocity, obj, cleanup);

@@ -1,9 +1,9 @@
-import { Enemies, Enemy, Boss } from './enemies';
+import { Enemies, Enemy, Boss } from '../enemies';
 import { EffectsManager } from "./effectsManager";
-import { getMiddle } from '../utils';
+import { getMiddle } from '../../utils';
 import { PlayerManager } from './playerManager';
-import { MainScene } from './main-scene';
-import { Weapon } from './weapon';
+import { MainScene } from '../main-scene';
+import { Weapon } from '../weapons/weapon';
 import { GameObjects } from 'phaser';
 
 export class InteractionManager {

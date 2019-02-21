@@ -14,7 +14,6 @@ export class ScoreBoard extends Component<IProps> {
     return (
       <div>
         <p className="first"><Link className="nes-btn is-primary" to={'/game'}>Start</Link></p>
-
         <h2 className="title" style={{ paddingTop: "20px" }}>Scoreboard</h2>
         <table className="nes-table is-bordered" style={{ display: "inline-block" }}>
           <tbody>

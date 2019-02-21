@@ -1,12 +1,13 @@
-import { EffectsManager } from './effectsManager';
-import { InteractionManager } from './interactionManager';
-import { MainScene } from './main-scene';
+import { InteractionManager } from '../managers/interactionManager';
+import { MainScene } from '../main-scene';
 import { GameObjects } from 'phaser';
-import { PlayerManager } from './playerManager';
-import { ScriptStep, SceneScript, EnemyConfig, EnemyType, BulletType, OnFireEvent } from './configs';
-import { Enemies, onEnemyKilled } from './enemies';
-import { Weapon } from './weapon';
-import { createRandomBehaviour, createTrackingBehaviour, createEnemyFiringBehaviour } from './enemyBehaviours';
+import { PlayerManager } from '../managers/playerManager';
+import { BulletType, OnFireEvent } from '../configs';
+import { Enemies, onEnemyKilled } from '../enemies';
+import { Weapon } from '../weapons/weapon';
+import { createRandomBehaviour, createTrackingBehaviour, createEnemyFiringBehaviour } from '../managers/enemyBehaviours';
+import { EffectsManager } from '../managers/effectsManager';
+import { ScriptStep, SceneScript, EnemyConfig, EnemyType } from './typesScript';
 
 const defaultHealth = 10;
 const defaultPosition = [0.5, 0.5];

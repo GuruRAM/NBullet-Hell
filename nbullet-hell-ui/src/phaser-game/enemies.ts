@@ -1,9 +1,10 @@
 import { ControlledObject } from './enemies';
-import { Weapon } from './weapon';
+import { Weapon } from './weapons/weapon';
 import { compose } from '../utils';
 import { GameObjects } from 'phaser';
 import { BulletType, OnFireEvent } from './configs';
-import { EffectsManager } from './effectsManager';
+import { EffectsManager } from './managers/effectsManager';
+import { ObjectWithHealth } from './objectWithHealth';
 
 export const onEnemyKilled = "onEnemyKilled";
 export class Enemies {
@@ -42,6 +43,11 @@ export class Enemies {
         boss.body.updateCenter();
         boss.setCollideWorldBounds(true);
         boss.showHealth();
+        //NOTE: hack to update boss health potision
+        this.scene.time.addEvent({
+            delay: 1,
+            callback: () => boss.resizeHealth()
+        });
         return boss;
     }
 
@@ -85,11 +91,10 @@ export type ControlledObject = Phaser.Physics.Arcade.Image;/* Phaser.GameObjects
 
 export type Behaviour = (behaviourObject: ControlledObject, cleanup: boolean) => [ControlledObject, boolean];
 
-export class Enemy extends Phaser.Physics.Arcade.Image {
-    protected maxHealth: number;
+export class Enemy extends ObjectWithHealth {
     public isBoss() { return false; }
     constructor(private behaviour: Behaviour = (obj, cleanup) => [obj, cleanup],
-        scene: Phaser.Scene, private effectsManager: EffectsManager, x: number, y: number,
+        scene: Phaser.Scene, protected effectsManager: EffectsManager, x: number, y: number,
         protected health: number,
         texture: string, frame?: string | integer) {
         super(scene, x, y, texture, frame);
@@ -118,26 +123,14 @@ export class Enemy extends Phaser.Physics.Arcade.Image {
         return 100;
     }
 
-    public getHealth() {
-        return this.health;
-    }
-
-    public getMaxHealth() {
-        return this.maxHealth;
-    }
-
-    public isFinished() {
-        return this.health < 1;
-    }
-
     public resizeHealth() {
     }
 
     public hitByBullet(playerBullet: GameObjects.GameObject) {
+        super.hitWithBullet();
         const bullet = playerBullet as Phaser.Physics.Arcade.Image;
         this.effectsManager.playSoundFireEnemy();
         this.effectsManager.playAnimationCraftExplosion(bullet.x, bullet.y);
-        this.health--;
         this.resizeHealth();
         if(this.isFinished()) {
             this.scene.events.emit(onEnemyKilled, this.getScore());
@@ -215,16 +208,9 @@ export class Boss extends Enemy {
 
                 const x = Phaser.Math.RND.between(this.body.left, this.body.right);
                 const y = Phaser.Math.RND.between(this.body.bottom, this.body.top);
-                const explosion = this.scene.physics.add.sprite(x, y, "explosion1");
-                explosion.play('explosion');
-                const timer = this.scene.time.addEvent({
-                    delay: 1000,
-                    callback: () => {
-                        timer.destroy();
-                        explosion.destroy();
-                    }
-                });
-                this.scene.sound.play('explosion', { volume: 2 });
+
+                this.effectsManager.playAnimationCraftExplosion(x, y);
+                this.effectsManager.playSoundBossExplosion();
                 if (event.getProgress() >= event.getRepeatCount())
                     this.destroy();
             },
@@ -256,7 +242,7 @@ export class Boss extends Enemy {
 
         const ratio = this.getHealth() / this.getMaxHealth();
         this.healthBar.displayWidth = ratio * this.height;
-        this.healthBar.x = centerX + this.width / 2;// - (this.healthBar.width * ratio - this.healthBar.displayWidth)/2;
+        this.healthBar.x = centerX + this.width / 2;
         this.healthBar.y = centerY + this.height / 2 - this.healthBar.displayWidth / 2;
     }
 }

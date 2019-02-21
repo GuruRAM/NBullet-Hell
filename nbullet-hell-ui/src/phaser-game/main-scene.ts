@@ -1,8 +1,7 @@
-import { PlayerManager } from './playerManager';
-import { EffectsManager } from "./effectsManager";
-import { InteractionManager } from "./interactionManager";
-import { SceneScriptExecutor } from "./sceneScript";
-import { gameScript } from './gameScript';
+import { PlayerManager } from './managers/playerManager';
+import { SceneScriptExecutor } from "./scripts/sceneScript";
+import { gameScript } from './scripts/gameScript';
+import { EffectsManager } from './managers/effectsManager';
 
 export class MainScene extends Phaser.Scene {
     protected effectsManager = new EffectsManager(this);
