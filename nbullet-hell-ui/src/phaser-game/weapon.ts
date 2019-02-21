@@ -3,10 +3,11 @@ import { BulletConfig, BulletType } from "./configs";
 export class Weapon {
     public interceptable = true;
     public group!: Phaser.Physics.Arcade.Group;
-    private currentInterval = 0;
+
     private isActive = true;
+    private isReloading = false;
     constructor(private owner: Phaser.Physics.Arcade.Image, private fireInterval: number, 
-        private scene: Phaser.Scene, private bulletConfig: BulletConfig, private rotationDif = 0, private startScale: number = 1) {
+        private scene: Phaser.Scene, private bulletConfig: BulletConfig, private rotationDif = 0, private startPositionRatio: number = 1) {
     }
 
     create() {
@@ -22,18 +23,34 @@ export class Weapon {
     }
 
     fire() {
-        if (!this.isActive)
+        if (!this.isActive || this.isReloading)
             return;
-        if (this.currentInterval <= 0) {
-            this.currentInterval = this.fireInterval;
-            this.innerFire();
+        this.innerFire();
+        this.isReloading = true;
+        this.reload();
+    }
+
+    reload() {
+        if (this.fireInterval <= 0)
+        {
+            this.isReloading = false;
+            return;
         }
+
+        const event = this.scene.time.addEvent({
+            delay: this.fireInterval,
+            callback: () => {
+                this.isReloading = false;
+                event.destroy();
+            }
+        });
     }
 
     //+5 armor
     innerFire() {
-        const x = this.owner.x + this.startScale * (this.owner.displayHeight * Math.sin(this.owner.rotation + this.rotationDif));
-        const y = this.owner.y - this.startScale * (this.owner.displayHeight * Math.cos(this.owner.rotation + this.rotationDif));
+        const bulletOffset = (this.owner.displayHeight + this.owner.displayWidth)/2;
+        const x = this.owner.x + this.startPositionRatio * (bulletOffset * Math.sin(this.owner.rotation + this.rotationDif));
+        const y = this.owner.y - this.startPositionRatio * (bulletOffset * Math.cos(this.owner.rotation + this.rotationDif));
         const bullet = new Phaser.Physics.Arcade.Image(this.scene, x, y, this.bulletConfig.key);
         this.group.add(bullet, true);
         const rotation = this.owner.rotation + this.rotationDif;
@@ -43,7 +60,7 @@ export class Weapon {
             //TODO: calculate a proper offset;
             bullet.body.setCircle(radius*displayBodyRatio, radius*(1-displayBodyRatio), radius*(1-displayBodyRatio));
             bullet.body.updateCenter();
-        } else if (this.bulletConfig.bulletType == BulletType.PlayerBullet) {
+        } else if (this.bulletConfig.bulletType == BulletType.TrailBullet) {
             const radius = bullet.width / 2;
             const displayBodyRatio = 0.5;
             const adjustedRadius = radius * displayBodyRatio;
@@ -51,7 +68,7 @@ export class Weapon {
                 adjustedRadius + 0.75*radius*Math.sin(rotation),
                 adjustedRadius/2 + 0.75*radius*(1 - Math.cos(rotation)));
             bullet.body.updateCenter();
-        } else if (this.bulletConfig.bulletType == BulletType.BossMainBullet) {
+        } else if (this.bulletConfig.bulletType == BulletType.RectangleBullet) {
             //heightRatio: 0.65
             //widthRatio: 0.42
             const bodyWidth = bullet.width * 0.42;
@@ -80,14 +97,7 @@ export class Weapon {
         bullet.setAccelerationX(baseAccelerration * Math.sin(bullet.rotation));
         bullet.setAccelerationY(-(baseAccelerration * Math.cos(bullet.rotation)));
 
-        if (this.bulletConfig.fireSound) {
-            const music = this.scene.sound.add(this.bulletConfig.fireSound.key, { volume: this.bulletConfig.fireSound.volume });
-            music.play();
-        }
-    }
-
-    update() {
-        this.currentInterval = Math.max(0, this.currentInterval - 1);
+        this.scene.events.emit(this.bulletConfig.onFireEvent, bullet);
     }
 
     destroy() {

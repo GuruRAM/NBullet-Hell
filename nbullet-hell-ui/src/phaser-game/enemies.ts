@@ -1,40 +1,42 @@
 import { ControlledObject } from './enemies';
-import { Subscription, interval } from 'rxjs';
 import { Weapon } from './weapon';
 import { compose } from '../utils';
 import { GameObjects } from 'phaser';
-import { BulletType } from './configs';
+import { BulletType, OnFireEvent } from './configs';
+import { EffectsManager } from './effectsManager';
 
+export const onEnemyKilled = "onEnemyKilled";
 export class Enemies {
     public group!: Phaser.Physics.Arcade.Group;
-    private subscription: Subscription;
+    private subscription: Phaser.Time.TimerEvent;
     private canUpdate = true;    
-    constructor(private player: Phaser.Physics.Arcade.Image, private scene: Phaser.Scene) {
-        this.subscription = interval(300).subscribe(() => {
-            this.canUpdate = true;
-        })
+    constructor(private effectsManager: EffectsManager, private scene: Phaser.Scene) {
+        this.subscription = this.scene.time.addEvent(
+            {
+                loop: true,
+                delay: 300,
+                callback: () => this.canUpdate = true
+            });
     }
 
     create() {
         this.group = this.scene.physics.add.group();
     }
 
-    addEnemy(x: number, y: number, texture: string, scale: number = 1, behaviour: Behaviour = (obj, cleanup) => [obj, cleanup]) {
+    addEnemy(x: number, y: number, health: number, texture: string, scale: number = 1, behaviour: Behaviour = (obj, cleanup) => [obj, cleanup]) {
         // replace with sprites
-        const enemy = new Enemy(behaviour, this.scene, x, y, texture);
+        const enemy = new Enemy(behaviour, this.scene, this.effectsManager, x, y, health, texture);
         this.group.add(enemy, true);
         enemy.setScale(scale, scale);
-//        enemy.setSize(enemy.displayWidth, enemy.displayHeight);
-//        enemy.body.updateCenter();
         enemy.setBounce(0.1, 0.1);
         enemy.setCollideWorldBounds(true);
         return enemy;
     }
 
-    addBoss() {
-        const boss = new Boss(this.scene,
-            this.scene.physics.world.bounds.centerX,
-            this.scene.physics.world.bounds.centerY);
+    addBoss(x: number, y: number, startRotatePosition: number,
+        angularSpeed: number, health: number) {
+        const boss = new Boss(this.scene, this.effectsManager, x, y, angularSpeed, health);
+        boss.rotation = startRotatePosition;
         this.group.add(boss, true);
         boss.body.setCircle(boss.height/2, boss.width/2 - boss.height/2, 0);
         boss.body.updateCenter();
@@ -49,7 +51,7 @@ export class Enemies {
             const convertedEnemy = <Enemy>enemy;
             if (convertedEnemy.isBoss()) {
                 convertedEnemy.update();
-                (<Boss>convertedEnemy).resizeHelth();
+                (<Boss>convertedEnemy).resizeHealth();
             }
             else
             {
@@ -69,7 +71,7 @@ export class Enemies {
     }
 
     destroy() {
-        this.subscription.unsubscribe();
+        this.subscription.destroy();
     }
 
     isAlive() {
@@ -84,13 +86,14 @@ export type ControlledObject = Phaser.Physics.Arcade.Image;/* Phaser.GameObjects
 export type Behaviour = (behaviourObject: ControlledObject, cleanup: boolean) => [ControlledObject, boolean];
 
 export class Enemy extends Phaser.Physics.Arcade.Image {
-    protected health = 1;
-    protected maxHealth = 1;
-
+    protected maxHealth: number;
     public isBoss() { return false; }
     constructor(private behaviour: Behaviour = (obj, cleanup) => [obj, cleanup],
-        scene: Phaser.Scene, x: number, y: number, texture: string, frame?: string | integer) {
+        scene: Phaser.Scene, private effectsManager: EffectsManager, x: number, y: number,
+        protected health: number,
+        texture: string, frame?: string | integer) {
         super(scene, x, y, texture, frame);
+        this.maxHealth = health;
     }
 
     public update() {
@@ -127,55 +130,51 @@ export class Enemy extends Phaser.Physics.Arcade.Image {
         return this.health < 1;
     }
 
-    public hitByBullet(playerBullet: GameObjects.GameObject,
-        explosionWithSound: (explosionKey: string, soundKey: string, soundVolume: number, coordinates: [number, number]) => void) {
-        this.health--;
+    public resizeHealth() {
+    }
+
+    public hitByBullet(playerBullet: GameObjects.GameObject) {
         const bullet = playerBullet as Phaser.Physics.Arcade.Image;
-        explosionWithSound('explosion', 'explosion', 0.3, [bullet.x, bullet.y]);
+        this.effectsManager.playSoundFireEnemy();
+        this.effectsManager.playAnimationCraftExplosion(bullet.x, bullet.y);
+        this.health--;
+        this.resizeHealth();
         if(this.isFinished()) {
+            this.scene.events.emit(onEnemyKilled, this.getScore());
             this.kill();
         }
     }
-
 
     protected kill() {
         this.destroy();
     }
 }
 
-
-
 export class Boss extends Enemy {
-    protected health = 100;
-    protected maxHealth = 100;
-    private angularSpeed = 0.012;
     private weapon45!: Weapon;
     private weapon135!: Weapon;
     private weapon225!: Weapon;
     private weapon315!: Weapon;
     private mainWeapon!: Weapon;
     private weapons: Weapon[] = [];
-    constructor(scene: Phaser.Scene, x: number, y: number, frame?: string | integer) {
-        super(undefined, scene, x, y, 'boss', frame);
+    constructor(scene: Phaser.Scene, effectsManager: EffectsManager, x: number, y: number, private angularSpeed: number, protected health: number, frame?: string | integer) {
+        super(undefined, scene, effectsManager, x, y, health, 'boss', frame);
         const bulletConfig = {
-            fireSound: {
-                key: 'fire1',
-                volume: 0.015
-            },
             key: 'EnemyProjectile1',
             scale: 1,
             velocity: 600,
             bulletType: BulletType.RoundBullet,
+            onFireEvent: OnFireEvent.OnBossFire
         };
-        this.weapon45 = new Weapon(this, 4, scene, bulletConfig, 1*Math.PI/4, 0.5);
+        this.weapon45 = new Weapon(this, 50, scene, bulletConfig, 1*Math.PI/4, 0.5);
         this.weapon45.create();
-        this.weapon135 = new Weapon(this, 4, scene, bulletConfig, 3*Math.PI/4, 0.5);
+        this.weapon135 = new Weapon(this, 50, scene, bulletConfig, 3*Math.PI/4, 0.5);
         this.weapon135.create();
-        this.weapon225 = new Weapon(this, 4, scene, bulletConfig, 5*Math.PI/4, 0.5);
+        this.weapon225 = new Weapon(this, 50, scene, bulletConfig, 5*Math.PI/4, 0.5);
         this.weapon225.create();
-        this.weapon315 = new Weapon(this, 4, scene, bulletConfig, 7*Math.PI/4, 0.5);
+        this.weapon315 = new Weapon(this, 75, scene, bulletConfig, 7*Math.PI/4, 0.5);
         this.weapon315.create();
-        this.mainWeapon = new Weapon(this, 6, scene, { ...bulletConfig, key: 'bossLaser', bulletType: BulletType.BossMainBullet }, 0, 0.5);
+        this.mainWeapon = new Weapon(this, 100, scene, { ...bulletConfig, key: 'bossLaser', bulletType: BulletType.RectangleBullet }, 0, 0.5);
         this.mainWeapon.create();
         this.mainWeapon.interceptable = false;
         this.weapons.push(this.weapon45);
@@ -183,8 +182,6 @@ export class Boss extends Enemy {
         this.weapons.push(this.weapon225);
         this.weapons.push(this.weapon315);
         this.weapons.push(this.mainWeapon);
-        const bossShape = this.scene.cache.json.get('shapes').boss;
-        
     }
 
     public update() {
@@ -194,7 +191,6 @@ export class Boss extends Enemy {
         this.setRotation(this.rotation + this.angularSpeed);
         this.weapons.forEach(weapon => {
             weapon.fire();
-            weapon.update();
         });
     }
 
@@ -207,7 +203,7 @@ export class Boss extends Enemy {
     }
 
     protected kill() {
-        this.resizeHelth();
+        this.resizeHealth();
         this.setActive(false);
         this.setAngularVelocity(0);
         const event = this.scene.time.addEvent({
@@ -248,10 +244,10 @@ export class Boss extends Enemy {
         this.healthBar.setBlendMode(Phaser.BlendModes.ADD);
         this.healthBar.setScale(1, 0.3);
         this.healthBar.rotation = Math.PI/2;
-        this.resizeHelth();
+        this.resizeHealth();
     }
 
-    public resizeHelth() {
+    public resizeHealth() {
         if (!this.healthBar)
             return;
 
@@ -263,73 +259,4 @@ export class Boss extends Enemy {
         this.healthBar.x = centerX + this.width / 2;// - (this.healthBar.width * ratio - this.healthBar.displayWidth)/2;
         this.healthBar.y = centerY + this.height / 2 - this.healthBar.displayWidth / 2;
     }
-}
-
-export const createRandomBehaviour = (velocity: number, baseAngularVelocity: number) => 
-    (obj: ControlledObject, cleanup: boolean) => randomBehaviour(velocity, baseAngularVelocity, obj, cleanup);
-export const createTrackingBehaviour = (objectToTrack: Phaser.GameObjects.Components.Transform, angularVelocity: number, accuracy: number) => 
-    (obj: ControlledObject, cleanup: boolean) => trackingBehaviour(objectToTrack, angularVelocity, accuracy, obj, cleanup);
-export const createRoundMovementBehaviour = (velocity: number, angularAcceleration: number) => 
-    (obj: ControlledObject, cleanup: boolean) => roundMovementBehaviour(velocity, angularAcceleration, obj, cleanup);
-
-export const createTrackingRandomBehaviour = (objectToTrack: Phaser.GameObjects.Components.Transform, trackingAngularVelocity: number, trackingAccuracy: number,
-    randomVelocity: number, randomAngularVelocity: number) => (compose(createTrackingBehaviour(objectToTrack, trackingAngularVelocity, trackingAccuracy), createRandomBehaviour(randomVelocity, randomAngularVelocity)))
-
-export function createEnemyFiringBehaviour(weaponFactory: () => Weapon) : Behaviour {
-    const weapon = weaponFactory();
-    return (obj: ControlledObject, cleanup: boolean) : [ControlledObject, boolean] => {
-        if (cleanup) {
-            weapon.destroy();
-            return [obj, cleanup];
-        }
-        weapon.fire();
-        weapon.update();
-        return [obj, cleanup];
-    }
-}
-
-function randomBehaviour(velocity: number, baseAngularVelocity: number, controlledObject: ControlledObject, cleanup: boolean): [ControlledObject, boolean] {
-    if (!cleanup) {
-        const currentVelocity = controlledObject.body.velocity;
-        const currentVelocityAngle = Math.atan2(currentVelocity.y, currentVelocity.x);
-        const dif = 2*(Math.random() - 0.5) * baseAngularVelocity
-        const newAngle = currentVelocityAngle + dif;
-        controlledObject.setVelocityX(velocity*Math.cos(newAngle));
-        controlledObject.setVelocityY(velocity*Math.sin(newAngle));
-    }
-    return [controlledObject, cleanup];
-}
-
-function getAngleRadian(obj1: Phaser.GameObjects.Components.Transform, obj2: Phaser.GameObjects.Components.Transform) {
-    var angleRadians = Math.atan2(obj2.y-obj1.y, obj2.x-obj1.x);
-    return angleRadians;
-}
-
-//TODO: Not optimal tracking, replace with the optimal solution
-function trackingBehaviour(objectToTrack: Phaser.GameObjects.Components.Transform, angularVelocity: number, accuracy: number, controllerObject: ControlledObject, cleanup: boolean): [ControlledObject, boolean] {
-    if (!cleanup) {
-        const newAngle = (getAngleRadian(controllerObject, objectToTrack) + 2 * Math.PI) % (2*Math.PI);
-        const currentAngle = (controllerObject.rotation + 3 * Math.PI/2) % (2*Math.PI);
-        const dif = (newAngle - currentAngle) % (2*Math.PI);
-        if (Math.abs(dif) <= accuracy) {
-            controllerObject.setAngularVelocity(0);
-        } else {
-            controllerObject.setAngularVelocity((180 / Math.PI) * (dif > 0 ? angularVelocity : -angularVelocity));
-        }
-    }
-    return [controllerObject, cleanup];
-}
-
-function roundMovementBehaviour(velocity: number, angularAcceleration: number, controllerObject: ControlledObject, cleanup: boolean): [ControlledObject, boolean] {
-    if (!cleanup) {
-        const velocityAngle = controllerObject.body.velocity.angle();
-        const accelerationAngle = velocityAngle + Math.PI / 2;
-        if (controllerObject.body.velocity.length() - velocity < 0.01) {
-            controllerObject.setVelocity(velocity * Math.cos(velocityAngle),
-            velocity * Math.sin(velocityAngle));
-        }
-        controllerObject.setAcceleration(angularAcceleration*Math.cos(accelerationAngle),
-            angularAcceleration*Math.sin(accelerationAngle));
-    }
-    return [controllerObject, cleanup];
 }

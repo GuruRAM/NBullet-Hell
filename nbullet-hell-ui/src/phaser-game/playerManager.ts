@@ -1,19 +1,30 @@
 import { Player } from "./player";
-import { Scene } from "phaser";
+import { Scene, GameObjects } from "phaser";
 import { Weapon } from "./weapon";
-import { BulletType } from "./configs";
+import { BulletType, OnFireEvent } from "./configs";
 
 export class PlayerManager {
+    private playerVelocity = 250;
+    //in radians
+    private playerAngularVelocity = 3;
+    private playerBulletVelocity = 600;
+
+    private playerOriginalSize: [number, number] = [256, 256];
+    private playerScale = 0.2;
+    private bulletScale = 0.65;
+    private volume = 0.1;
+    //in ms
+    private fireInterval = 100;
     constructor(private scene: Scene) {
     }
 
-    private player!: Player;
+    public player!: Player;
     private playerBar!: Phaser.GameObjects.Image;
 
-    public createPlayer(x: number = 0, y: number = 0, health: number = 30): Player {
-        const player = new Player(this.scene, 256, 256, 'starfighter');
+    public createPlayer(x: number = 0, y: number = 0, health: number): Player {
+        const player = new Player(this.scene, this.playerOriginalSize[0], this.playerOriginalSize[1], 'starfighter');
         player.setHealth(health, health);
-        player.setScale(0.2, 0.2);
+        player.setScale(this.playerScale);
         player.height = player.displayHeight;
         player.width = player.displayWidth;
         this.scene.sys.displayList.add(player);
@@ -27,15 +38,16 @@ export class PlayerManager {
         const playerBar = this.scene.add.image(x, y, "ground");
         this.playerBar = playerBar;
         this.playerBar.setBlendMode(Phaser.BlendModes.ADD);
+        //TODO: create a bar component
         this.playerBar.setScale(1, 0.3);
         this.resize();
 
-        this.player.weapon = new Weapon(this.player, 5, this.scene, {
+        this.player.weapon = new Weapon(this.player, this.fireInterval, this.scene, {
             key: 'MegaLaser',
-            scale: 0.65,
-            velocity: 600,
-            fireSound: { key: 'fire', volume: 0.01 },
-            bulletType: BulletType.PlayerBullet
+            scale: this.bulletScale,
+            velocity: this.playerBulletVelocity,
+            onFireEvent: OnFireEvent.OnPlayerFire,
+            bulletType: BulletType.TrailBullet
         });
         this.player.weapon.create();
 
@@ -53,6 +65,11 @@ export class PlayerManager {
         this.playerBar.y = height - 3 * this.playerBar.displayHeight;
     }
 
+    hitWithBullet(bulletObject: GameObjects.GameObject) {
+        this.player.hitWithBullet();
+        this.resize();
+    }
+
     updatePlayerControl(allowToFire = true) {
         const cursor = this.scene.input.keyboard.createCursorKeys();
         const space = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -60,40 +77,48 @@ export class PlayerManager {
         const keyS = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         const keyA = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
         const keyD = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        
-        if (keyA!.isDown)
-        {
-            this.player.setVelocityX(-250);
-        }
-        else if (keyD!.isDown)
-        {
-            this.player.setVelocityX(250);
-        }
-        else
-        {
-            this.player.setVelocityX(0);
-        }
-    
-        if (keyW!.isDown)
-        {
-            this.player.setVelocityY(-250);
-        }
-        else if (keyS!.isDown)
-        {
-            this.player.setVelocityY(250);
-        }
-        else
-        {
-            this.player.setVelocityY(0);
-        }
 
         if (cursor.left!.isDown)
         {
-            this.player.setAngle(this.player.angle - 3);
+            this.player.setAngle(this.player.angle - this.playerAngularVelocity);
         }
         else if (cursor.right!.isDown)
         {
-            this.player.setAngle(this.player.angle + 3);
+            this.player.setAngle(this.player.angle + this.playerAngularVelocity);
+        }
+
+        if (cursor.up!.isDown) {
+            this.player.setVelocityX(this.playerVelocity * Math.sin(this.player.rotation));
+            this.player.setVelocityY(-this.playerVelocity * Math.cos(this.player.rotation));
+        } else if (cursor.down!.isDown) {
+            this.player.setVelocityX(-this.playerVelocity * Math.sin(this.player.rotation));
+            this.player.setVelocityY(this.playerVelocity * Math.cos(this.player.rotation));
+        } else {
+            if (keyA!.isDown)
+            {
+                this.player.setVelocityX(-this.playerVelocity);
+            }
+            else if (keyD!.isDown)
+            {
+                this.player.setVelocityX(this.playerVelocity);
+            }
+            else
+            {
+                this.player.setVelocityX(0);
+            }
+        
+            if (keyW!.isDown)
+            {
+                this.player.setVelocityY(-this.playerVelocity);
+            }
+            else if (keyS!.isDown)
+            {
+                this.player.setVelocityY(this.playerVelocity);
+            }
+            else
+            {
+                this.player.setVelocityY(0);
+            }
         }
 
         if (allowToFire && space.isDown) {
