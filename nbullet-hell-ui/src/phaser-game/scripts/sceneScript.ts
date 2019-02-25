@@ -59,7 +59,7 @@ export class SceneScriptExecutor {
                 this.currentStepTimes = this.currentStep!.enemies.map(enemy =>
                     this.scene.time.addEvent({
                         delay: enemy.delay,
-                        callback: () => this.currentEnemies.push(this.createEnemy(enemy))
+                        callback: () => this.currentEnemies.push(...this.createEnemies(enemy))
                     }));
             }
         })];
@@ -69,36 +69,51 @@ export class SceneScriptExecutor {
         this.scene.resizeWaveText();
     }
 
-    private createEnemy(config: EnemyConfig): Phaser.GameObjects.GameObject {
+    private getPosition(startPosition: [number, number] | undefined) {
         const width = this.scene.physics.world.bounds.width;
-        const height = this.scene.physics.world.bounds.height
-        const startPosition = (config.startPosition && [config.startPosition[0]*width, config.startPosition[1]*height]) ||
-            [Phaser.Math.RND.between(0, width), Phaser.Math.RND.between(0, height)];
-        if (config.type == EnemyType.TackingEnemy) {
-            const enemy = this.enemies.addEnemy(startPosition[0], startPosition[1], config.health || 1, 'enemy1', 0.2)
-                .addBehaviour(createRandomBehaviour(config.velocity || 200, config.angularVelocity || 0.5))
-                .addBehaviour(createTrackingBehaviour(this.playerManager.player, 2, 0.05));
+        const height = this.scene.physics.world.bounds.height;
 
-            enemy.addBehaviour(createEnemyFiringBehaviour(() => {
-                const weapon = new Weapon(enemy, config.fireInterval || 1500, this.scene, {
-                    scale: 2,
-                    velocity: 500,
-                    onFireEvent: OnFireEvent.OnEnemyFire,
-                    key: 'EnemyProjectile1',
-                    bulletType: BulletType.RoundBullet
-                });
-                weapon.create();
-                this.interactionManager.registerEnemy(enemy, weapon);
-                return weapon;
-            }));
-            return enemy;
+        return (startPosition && [startPosition[0]*width, startPosition[1]*height]) ||
+            [Phaser.Math.RND.between(0, width), Phaser.Math.RND.between(0, height)];
+    }
+    private createEnemies(config: EnemyConfig): Phaser.GameObjects.GameObject[] {
+        let result: Phaser.GameObjects.GameObject[] = []
+        if (config.type == EnemyType.TackingEnemy) {
+            for(let i = 0; i < (config.quantity || 1); i++) {
+                const startPosition = this.getPosition(config.startPosition);
+                const enemy = this.enemies.addEnemy(startPosition[0], startPosition[1], config.health || 1, 'enemy1', 0.2)
+                    .addBehaviour(createRandomBehaviour(config.velocity || 200, config.angularVelocity || 0.5))
+                    .addBehaviour(createTrackingBehaviour(this.playerManager.player, 2, 0.05));
+                enemy.setImmovable(true);
+                enemy.addBehaviour(createEnemyFiringBehaviour(() => {
+                    const weapon = new Weapon(enemy, config.fireInterval || 1500, this.scene, {
+                        scale: 2,
+                        velocity: 500,
+                        onFireEvent: OnFireEvent.OnEnemyFire,
+                        key: 'EnemyProjectile1',
+                        bulletType: BulletType.RoundBullet
+                    });
+                    weapon.create();
+                    this.interactionManager.registerEnemy(enemy, weapon);
+                    return weapon;
+                }));
+                enemy.setEnemyActive(config.actionDelay, () => enemy.body && enemy.setImmovable(false));
+                result.push(enemy);
+            }
+            return result;
         } else if (config.type == EnemyType.StationaryBoss) {
-            const boss = this.enemies.addBoss(startPosition[0], startPosition[1],
-                config.startRotatePosition || 0, config.angularVelocity || 0.012, config.health || 100);
-            this.interactionManager.registerBoss(boss);
-            return boss;
+            for(let i = 0; i < (config.quantity || 1); i++) {
+                const startPosition = this.getPosition(config.startPosition);
+                const boss = this.enemies.addBoss(startPosition[0], startPosition[1],
+                    config.startRotatePosition || 0, config.angularVelocity || 0.012, config.health || 100);
+                this.interactionManager.registerBoss(boss);
+                boss.setImmovable(true);
+                boss.setEnemyActive(config.actionDelay);
+                result.push(boss);
+            }
+            return result;
         }
-            throw new Error(`${config.type} is not supported yet`);
+        throw new Error(`${config.type} is not supported yet`);
     }
 
     update() {

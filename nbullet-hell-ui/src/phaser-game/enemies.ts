@@ -28,8 +28,8 @@ export class Enemies {
         // replace with sprites
         const enemy = new Enemy(behaviour, this.scene, this.effectsManager, x, y, health, texture);
         this.group.add(enemy, true);
-        enemy.setScale(scale, scale);
         enemy.setBounce(0.1, 0.1);
+        enemy.setScale(scale, scale);
         enemy.setCollideWorldBounds(true);
         return enemy;
     }
@@ -55,7 +55,7 @@ export class Enemies {
         let updateDone = false;
         for(let enemy of this.group.getChildren()) {
             const convertedEnemy = <Enemy>enemy;
-            if (convertedEnemy.isBoss()) {
+            if (convertedEnemy instanceof Boss) {
                 convertedEnemy.update();
                 (<Boss>convertedEnemy).resizeHealth();
             }
@@ -92,7 +92,7 @@ export type ControlledObject = Phaser.Physics.Arcade.Image;/* Phaser.GameObjects
 export type Behaviour = (behaviourObject: ControlledObject, cleanup: boolean) => [ControlledObject, boolean];
 
 export class Enemy extends ObjectWithHealth {
-    public isBoss() { return false; }
+    private isEnemyActivated = false;
     constructor(private behaviour: Behaviour = (obj, cleanup) => [obj, cleanup],
         scene: Phaser.Scene, protected effectsManager: EffectsManager, x: number, y: number,
         protected health: number,
@@ -101,7 +101,32 @@ export class Enemy extends ObjectWithHealth {
         this.maxHealth = health;
     }
 
+    public setEnemyActive(delay: number = 0, onEnemyActivated: () => void = () => {}) {
+        if (!delay) {
+            this.isEnemyActivated = true;
+            onEnemyActivated();
+        }
+        else
+            this.scene.time.addEvent({
+                delay: delay,
+                callback: () => {
+                    this.isEnemyActivated = true;
+                    onEnemyActivated();
+                }
+            })
+    }
+
+    protected onEnemyActivated() {
+        this.setImmovable(true);
+    }
+
     public update() {
+        if (!this.isEnemyActivated)
+            return;
+        this.updateOverride();
+    }
+
+    protected updateOverride() {
         if (this.active && this.behaviour)
             this.behaviour(this, false);
     }
@@ -177,7 +202,7 @@ export class Boss extends Enemy {
         this.weapons.push(this.mainWeapon);
     }
 
-    public update() {
+    protected updateOverride() {
         if (this.body)
             this.setVelocity(0);
         if (!this.active || this.isFinished()) return;
@@ -220,8 +245,6 @@ export class Boss extends Enemy {
     public getWeapons() {
         return [...this.weapons];
     }
-
-    public isBoss() { return true; }
 
     private healthBar: Phaser.GameObjects.Image | undefined;
 

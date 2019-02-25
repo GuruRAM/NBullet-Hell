@@ -1,8 +1,8 @@
 import { Component } from "react";
 import { Player } from "../models/models";
 import { Link } from 'react-router-dom';
+import { history } from '../store';
 import React from 'react'
-import { Display } from 'phaser';
 
 interface IProps {
   player: Player
@@ -30,5 +30,20 @@ export class ScoreBoard extends Component<IProps> {
         </table>
       </div>
     );
+  }
+
+  componentDidMount() {
+      document.addEventListener("keydown", this.handleKeyDown);
+  }
+
+  componentWillUnmount() {
+      document.removeEventListener("keydown", this.handleKeyDown);
+  }
+
+  //NOTE: not binded to the component, this can't be used
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.code === 'Enter' || event.code === 'Space') {
+      history.push('/game');
+    }
   }
 }

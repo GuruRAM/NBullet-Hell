@@ -23,7 +23,6 @@ export class InteractionManager {
     }
 
     registerBoss(boss: Boss) {
-        boss.setImmovable(true);
         const bossWeapons = boss.getWeapons();
         const interceptableGroups = bossWeapons.filter(i => i.interceptable).map(i => i.group);
         const allGroups = bossWeapons.map(i => i.group);

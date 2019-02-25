@@ -12,7 +12,7 @@ export type ScriptStep = {
 
 export type EnemyConfig = {
     type: EnemyType,
-    delay: number;
+    delay?: number | undefined;
     fireInterval?: number | undefined,
     velocity?: number | undefined,
     angularVelocity?: number | undefined,
@@ -25,6 +25,8 @@ export type EnemyConfig = {
     //0, 0 = upper left corner;
     //1, 1 = upper right corner;
     startPosition?: [number, number] | undefined;
+    quantity?: number | undefined;
+    actionDelay?: number | undefined;
 }
 
 export enum EnemyType {
