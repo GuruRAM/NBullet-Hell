@@ -39,6 +39,7 @@ export class SceneScriptExecutor {
         const pp = this.script.playerPosition || defaultPosition;
         const ph = this.script.playerHealth || defaultHealth;
         const bounds = this.scene.physics.world.bounds;
+        this.playerManager.enableTouch();
         this.playerManager.createPlayer(pp[0] * bounds.width, pp[1] * bounds.height, ph);
         this.currentStep = this.script.steps[0];
         this.enemies = new Enemies(this.effectsManager, this.scene);

@@ -1,6 +1,6 @@
 import { PlayerManager } from './managers/playerManager';
 import { SceneScriptExecutor } from "./scripts/sceneScript";
-import { gameScript } from './scripts/gameScript';
+import { gameScript, simpleGameScript } from './scripts/gameScript';
 import { EffectsManager } from './managers/effectsManager';
 
 export class MainScene extends Phaser.Scene {
@@ -24,8 +24,11 @@ export class MainScene extends Phaser.Scene {
     }
 
     create() {
+        this.input.addPointer(3);
         this.effectsManager.register();
         this.onKeydown = this.onKeydown.bind(this);
+        this.onTouchStart = this.onTouchStart.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
         this.effectsManager.playSoundBackground();
         this.add.image(0, 0, 'background');
         this.events.on('resize', () => {
@@ -38,11 +41,19 @@ export class MainScene extends Phaser.Scene {
         }, this);
 
         document.addEventListener("keydown", this.onKeydown);
+        document.addEventListener("touchstart", this.onTouchStart);
+        document.addEventListener("touchend", this.onTouchEnd);
+
+
         this.events.on('destroy', () => {
             document.removeEventListener("keydown", this.onKeydown);
+            document.removeEventListener("touchstart", this.onTouchStart);
+            document.removeEventListener("touchend", this.onTouchEnd);
         });
 
-        this.scriptExecutor = new SceneScriptExecutor(gameScript, this.effectsManager,
+
+        const script = this.input.manager.touch ? simpleGameScript : gameScript; 
+        this.scriptExecutor = new SceneScriptExecutor(script, this.effectsManager,
             this.playerManager, this);
         
         this.waveText = this.add.text(0, 16, '', { fontSize: '32px', fill: '#FFFFFF' });
@@ -52,8 +63,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     update() {
-        this.scriptExecutor.update();
-        
+        this.scriptExecutor.update();    
         if (this.scriptExecutor.isFinished()) {
             if (this.playerManager.player.isFinished()) {
                 this.effectsManager.playSoundLose();
@@ -67,7 +77,8 @@ export class MainScene extends Phaser.Scene {
 
     gameOverSequence(text: string = 'GAME OVER') {
         this.gameOver = this.add.text(0, 0, text, { fontSize: '72px', fill: '#FFFFFF' });
-        this.continue = this.add.text(0, 0, `Press ENTER to continue!`, { fontSize: '32px', fill: '#FFFFFF' });
+        let instructions = `Press ENTER${this.input.manager.touch ? ' / TAP' : ''} to continue`;
+        this.continue = this.add.text(0, 0, instructions, { fontSize: '32px', fill: '#FFFFFF' });
         this.resizeGameOverText();
         //TODO: Capture the ENTER event and exit the game
         this.scene.pause();
@@ -92,6 +103,18 @@ export class MainScene extends Phaser.Scene {
     //NOTE: the input logic will be changed in Phaser 3.16.1
     onKeydown(kevt: KeyboardEvent) : any {
         if (kevt.code == 'Escape' || (this.gameOver && kevt.code == 'Enter'))
+            this.game.events.emit('game-finished', this.scriptExecutor.score);
+    }
+
+    private finalTouchStarted = false;
+
+    onTouchStart(tevt: TouchEvent) : any {
+        if (this.gameOver)
+            this.finalTouchStarted = true;
+    }
+
+    onTouchEnd(tevt: TouchEvent) : any {
+        if (this.gameOver && this.finalTouchStarted)
             this.game.events.emit('game-finished', this.scriptExecutor.score);
     }
 }

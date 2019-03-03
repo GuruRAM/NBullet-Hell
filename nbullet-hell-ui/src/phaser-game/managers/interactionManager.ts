@@ -63,7 +63,6 @@ export class InteractionManager {
     onPlayerHit(playerObject: GameObjects.GameObject, bulletObject: GameObjects.GameObject) {
         if (!bulletObject.active)
             return;
-        debugger;
         //TODO: move to PlayerManager
         const b1 = <Phaser.Physics.Arcade.Image>playerObject;
         const b2 = <Phaser.Physics.Arcade.Image>bulletObject;

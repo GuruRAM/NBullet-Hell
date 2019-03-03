@@ -36,7 +36,7 @@ export class Weapon {
             this.isReloading = false;
             return;
         }
-
+        
         const event = this.scene.time.addEvent({
             delay: this.fireInterval,
             callback: () => {
