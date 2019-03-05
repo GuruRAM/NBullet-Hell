@@ -39,7 +39,7 @@ export class SceneScriptExecutor {
         const pp = this.script.playerPosition || defaultPosition;
         const ph = this.script.playerHealth || defaultHealth;
         const bounds = this.scene.physics.world.bounds;
-        this.playerManager.enableTouch();
+        this.playerManager.drawControlElements();
         this.playerManager.createPlayer(pp[0] * bounds.width, pp[1] * bounds.height, ph);
         this.currentStep = this.script.steps[0];
         this.enemies = new Enemies(this.effectsManager, this.scene);
@@ -87,7 +87,7 @@ export class SceneScriptExecutor {
                     .addBehaviour(createTrackingBehaviour(this.playerManager.player, 2, 0.05));
                 enemy.setImmovable(true);
                 enemy.addBehaviour(createEnemyFiringBehaviour(() => {
-                    const weapon = new Weapon(enemy, config.fireInterval || 1500, this.scene, {
+                    const weapon = new Weapon(enemy, 1500 * (config.fireIntervalMidifier || 1), this.scene, {
                         scale: 2,
                         velocity: 500,
                         onFireEvent: OnFireEvent.OnEnemyFire,
@@ -106,7 +106,7 @@ export class SceneScriptExecutor {
             for(let i = 0; i < (config.quantity || 1); i++) {
                 const startPosition = this.getPosition(config.startPosition);
                 const boss = this.enemies.addBoss(startPosition[0], startPosition[1],
-                    config.startRotatePosition || 0, config.angularVelocity || 0.012, config.health || 100);
+                    config.startRotatePosition || 0, config.angularVelocity || 0.012, config.health || 100, config.fireIntervalMidifier || 1);
                 this.interactionManager.registerBoss(boss);
                 boss.setImmovable(true);
                 boss.setEnemyActive(config.actionDelay);

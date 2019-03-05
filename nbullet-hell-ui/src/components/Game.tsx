@@ -22,6 +22,7 @@ export class Game extends Component<IProps> {
       //mounting the phaser canvas
       this.phaserGame = createGame(this.canvasRef.current!);
       window.addEventListener('resize', this.updateGameSize);
+      window.addEventListener('orientationchange', this.updateGameSize);
       this.phaserGame.events.addListener('game-finished', this.finishGame);
   }
 
@@ -29,6 +30,7 @@ export class Game extends Component<IProps> {
     this.phaserGame.events.removeAllListeners('game-finished');
     this.phaserGame!.destroy(true);
     window.removeEventListener('resize', this.updateGameSize);
+    window.removeEventListener('orientationchange', this.updateGameSize);
   }
 
   updateGameSize() {

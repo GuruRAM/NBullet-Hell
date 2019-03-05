@@ -4,6 +4,7 @@ import { gameScript, simpleGameScript } from './scripts/gameScript';
 import { EffectsManager } from './managers/effectsManager';
 
 export class MainScene extends Phaser.Scene {
+    private textPadding = 16;
     protected effectsManager = new EffectsManager(this);
     protected playerManager: PlayerManager = new PlayerManager(this);
     protected scriptExecutor!: SceneScriptExecutor;
@@ -37,7 +38,8 @@ export class MainScene extends Phaser.Scene {
             // this.cameras.main.setBounds(0, 0, width, height);
             this.resizeGameOverText();
             this.resizeWaveText();
-            this.playerManager.resize();
+            this.playerManager.resizePlayer();
+            this.playerManager.drawControlElements();
         }, this);
 
         document.addEventListener("keydown", this.onKeydown);
@@ -51,13 +53,12 @@ export class MainScene extends Phaser.Scene {
             document.removeEventListener("touchend", this.onTouchEnd);
         });
 
-
         const script = this.input.manager.touch ? simpleGameScript : gameScript; 
         this.scriptExecutor = new SceneScriptExecutor(script, this.effectsManager,
             this.playerManager, this);
         
-        this.waveText = this.add.text(0, 16, '', { fontSize: '32px', fill: '#FFFFFF' });
-        this.scoreText = this.add.text(16, 16, '', { fontSize: '32px', fill: '#FFFFFF' });
+        this.waveText = this.add.text(0, this.textPadding, '', { fontSize: '32px', fill: '#FFFFFF' });
+        this.scoreText = this.add.text(this.textPadding, this.textPadding, '', { fontSize: '32px', fill: '#FFFFFF' });
 
         this.scriptExecutor.startExecution();
     }
@@ -77,8 +78,8 @@ export class MainScene extends Phaser.Scene {
 
     gameOverSequence(text: string = 'GAME OVER') {
         this.gameOver = this.add.text(0, 0, text, { fontSize: '72px', fill: '#FFFFFF' });
-        let instructions = `Press ENTER${this.input.manager.touch ? ' / TAP' : ''} to continue`;
-        this.continue = this.add.text(0, 0, instructions, { fontSize: '32px', fill: '#FFFFFF' });
+        let instructions = `ENTER${this.input.manager.touch ? ' / TAP' : ''}`;
+        this.continue = this.add.text(0, 0, instructions, { fontSize: '26px', fill: '#FFFFFF' });
         this.resizeGameOverText();
         //TODO: Capture the ENTER event and exit the game
         this.scene.pause();
@@ -87,17 +88,37 @@ export class MainScene extends Phaser.Scene {
     resizeGameOverText() {
         if (this.gameOver == null || this.continue == null)
             return;
+        
+        const width = this.physics.world.bounds.width;
+        let desiredWidth = Math.min(this.gameOver.width, 0.95 * width);
+        if (this.gameOver.displayWidth != desiredWidth) {
+            const scale = desiredWidth / this.gameOver.width;
+            this.gameOver.setScale(scale, scale);
+        }
+        
+        desiredWidth = Math.min(this.continue.width, 0.95 * width);
+        if (this.continue.displayWidth != desiredWidth) {
+            const scale = desiredWidth / this.continue.width;
+            this.continue.setScale(scale, scale);
+        }
+
         const centerX = this.physics.world.bounds.centerX
         const centerY = this.physics.world.bounds.centerY
-        this.gameOver.x = centerX - this.gameOver.width/2;
-        this.gameOver.y = centerY - this.gameOver.height;
-        this.continue.x = centerX - this.continue.width/2;
-        this.continue.y = this.gameOver.y + 2*this.gameOver.height;
+        this.gameOver.x = centerX - this.gameOver.displayWidth/2;
+        this.gameOver.y = centerY - this.gameOver.displayHeight;
+        this.continue.x = centerX - this.continue.displayWidth/2;
+        this.continue.y = this.gameOver.y + 2 * this.gameOver.displayHeight;
     }
 
     resizeWaveText() {
         const x = this.physics.world.bounds.width;
-        this.waveText.x = x - this.waveText.width - 16;
+        if (this.waveText.width + this.scoreText.width > x * 0.8) {
+            this.waveText.x = this.textPadding;
+            this.waveText.y = 4 * this.textPadding;
+        } else {
+            this.waveText.y = this.textPadding;
+            this.waveText.x = x - this.waveText.width - this.textPadding;
+        }
     }
 
     //NOTE: the input logic will be changed in Phaser 3.16.1

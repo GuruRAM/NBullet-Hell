@@ -22,8 +22,7 @@ export class PlayerManager {
     public player!: Player;
     private playerBar!: Phaser.GameObjects.Image;
 
-    private movementCircle!: Phaser.Geom.Circle;
-    private aimCircle!: Phaser.Geom.Circle;
+    private controlCircles!: Phaser.GameObjects.Graphics;
 
     public createPlayer(x: number = 0, y: number = 0, health: number): Player {
         const player = new Player(this.scene, this.playerOriginalSize[0], this.playerOriginalSize[1], 'starfighter');
@@ -44,7 +43,8 @@ export class PlayerManager {
         this.playerBar.setBlendMode(Phaser.BlendModes.ADD);
         //TODO: create a bar component
         this.playerBar.setScale(1, 0.3);
-        this.resize();
+        this.resizePlayer();
+        this.drawControlElements();
 
         this.player.weapon = new Weapon(this.player, this.fireInterval, this.scene, {
             key: 'MegaLaser',
@@ -58,22 +58,23 @@ export class PlayerManager {
         return player;
     }
 
-    public resize() {
+    public resizePlayer() {
+        const width = this.scene.physics.world.bounds.width;
+        let desiredWidth = Math.min(this.playerBar.width, 0.75 * width);
+        let scaleRatio = desiredWidth / this.playerBar.width
         const healthRatio = this.player.getHealth()/this.player.getMaxHealth();
-        this.playerBar.displayWidth = this.playerBar.width * healthRatio;
+        this.playerBar.displayWidth = this.playerBar.width * healthRatio * scaleRatio;
 
         const centerX = this.scene.physics.world.bounds.centerX;
         const height = this.scene.physics.world.bounds.height;
 
-        this.playerBar.x = centerX - (this.playerBar.width - this.playerBar.displayWidth)/2;
+        this.playerBar.x = centerX - (this.playerBar.width * scaleRatio - this.playerBar.displayWidth)/2;
         this.playerBar.y = height - 3 * this.playerBar.displayHeight;
-
-        this.resizeControlElements();
     }
 
     hitWithBullet(bulletObject: GameObjects.GameObject) {
         this.player.hitWithBullet();
-        this.resize();
+        this.resizePlayer();
     }
 
     updatePlayerControl() {
@@ -165,10 +166,11 @@ export class PlayerManager {
         if (movementPointers.length > 0) {
             const p = movementPointers[0];
             let direction = new Phaser.Math.Vector2(p.x - mc.x, p.y - mc.y);
+            const modifier = 0.3 + 0.7 * direction.length() / (mc.radius + mc.invisibleExtension); 
             direction = direction.normalize();
 
-            this.player.setVelocityX(this.playerVelocity * direction.x);
-            this.player.setVelocityY(this.playerVelocity * direction.y);
+            this.player.setVelocityX(this.playerVelocity * modifier * direction.x);
+            this.player.setVelocityY(this.playerVelocity * modifier * direction.y);
         } else {
             this.player.setVelocity(0, 0);
         }
@@ -185,34 +187,23 @@ export class PlayerManager {
         return aimPointers.length > 0 || movementPointers.length > 0;
     }
 
-    public enableTouch() {
+    public drawControlElements() {
         if (!this.scene.input.manager.touch)
             return;
 
         const width = this.scene.physics.world.bounds.width;
         const height = this.scene.physics.world.bounds.height;
+
         const mc = getCircleMovement(width, height);
         const ac = getCircleAim(width, height);
 
-        this.movementCircle = new Phaser.Geom.Circle(mc.x, mc.y, mc.radius);
-        this.aimCircle = new Phaser.Geom.Circle(ac.x, ac.y, ac.radius);
+        const movementCircle = new Phaser.Geom.Circle(mc.x, mc.y, mc.radius);
+        const aimCircle = new Phaser.Geom.Circle(ac.x, ac.y, ac.radius);
 
-        const graphics = this.scene.add.graphics({ fillStyle: { color: 0x808080, alpha: 0.3 } });
-        graphics.fillCircleShape(this.movementCircle);
-        graphics.fillCircleShape(this.aimCircle);
-    }
-
-    private resizeControlElements() {
-        if (!this.scene.input.manager.touch)
-            return;
-
-        const width = this.scene.physics.world.bounds.width;
-        const height = this.scene.physics.world.bounds.height;
-        const mc = getCircleMovement(width, height);
-        const ac = getCircleAim(width, height);
-
-        //test
-        this.movementCircle.setPosition(mc.x, mc.y);
-        this.aimCircle.setPosition(ac.x, ac.y);
+        if (this.controlCircles)
+            this.controlCircles.destroy();
+        this.controlCircles = this.scene.add.graphics({ fillStyle: { color: 0x808080, alpha: 0.3 } });
+        this.controlCircles.fillCircleShape(movementCircle);
+        this.controlCircles.fillCircleShape(aimCircle);
     }
  }

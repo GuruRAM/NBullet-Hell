@@ -35,8 +35,8 @@ export class Enemies {
     }
 
     addBoss(x: number, y: number, startRotatePosition: number,
-        angularSpeed: number, health: number) {
-        const boss = new Boss(this.scene, this.effectsManager, x, y, angularSpeed, health);
+        angularSpeed: number, health: number, fireModifier: number) {
+        const boss = new Boss(this.scene, this.effectsManager, x, y, angularSpeed, health, fireModifier);
         boss.rotation = startRotatePosition;
         this.group.add(boss, true);
         boss.body.setCircle(boss.height/2, boss.width/2 - boss.height/2, 0);
@@ -48,6 +48,7 @@ export class Enemies {
             delay: 1,
             callback: () => boss.resizeHealth()
         });
+        boss.onBossResize();
         return boss;
     }
 
@@ -175,7 +176,7 @@ export class Boss extends Enemy {
     private weapon315!: Weapon;
     private mainWeapon!: Weapon;
     private weapons: Weapon[] = [];
-    constructor(scene: Phaser.Scene, effectsManager: EffectsManager, x: number, y: number, private angularSpeed: number, protected health: number, frame?: string | integer) {
+    constructor(scene: Phaser.Scene, effectsManager: EffectsManager, x: number, y: number, private angularSpeed: number, protected health: number, fireModifier: number = 1, frame?: string | integer) {
         super(undefined, scene, effectsManager, x, y, health, 'boss', frame);
         const bulletConfig = {
             key: 'EnemyProjectile1',
@@ -184,13 +185,13 @@ export class Boss extends Enemy {
             bulletType: BulletType.RoundBullet,
             onFireEvent: OnFireEvent.OnBossFire
         };
-        this.weapon45 = new Weapon(this, 50, scene, bulletConfig, 1*Math.PI/4, 0.5);
+        this.weapon45 = new Weapon(this, 50 * fireModifier, scene, bulletConfig, 1*Math.PI/4, 0.5);
         this.weapon45.create();
-        this.weapon135 = new Weapon(this, 50, scene, bulletConfig, 3*Math.PI/4, 0.5);
+        this.weapon135 = new Weapon(this, 50 * fireModifier, scene, bulletConfig, 3*Math.PI/4, 0.5);
         this.weapon135.create();
-        this.weapon225 = new Weapon(this, 50, scene, bulletConfig, 5*Math.PI/4, 0.5);
+        this.weapon225 = new Weapon(this, 50 * fireModifier, scene, bulletConfig, 5*Math.PI/4, 0.5);
         this.weapon225.create();
-        this.weapon315 = new Weapon(this, 75, scene, bulletConfig, 7*Math.PI/4, 0.5);
+        this.weapon315 = new Weapon(this, 75 * fireModifier, scene, bulletConfig, 7*Math.PI/4, 0.5);
         this.weapon315.create();
         this.mainWeapon = new Weapon(this, 100, scene, { ...bulletConfig, key: 'bossLaser', bulletType: BulletType.RectangleBullet }, 0, 0.5);
         this.mainWeapon.create();
@@ -200,6 +201,27 @@ export class Boss extends Enemy {
         this.weapons.push(this.weapon225);
         this.weapons.push(this.weapon315);
         this.weapons.push(this.mainWeapon);
+
+        this.onBossResize = this.onBossResize.bind(this);
+        this.scene.events.on('resize', this.onBossResize, this);
+    }
+
+    public onBossResize() {
+        if (!this.body)
+            return;
+
+        const width = this.scene.physics.world.bounds.width;
+        const height = this.scene.physics.world.bounds.height;
+
+        const desiredWidth = Math.min(this.width, 0.4 * width);
+        const desiredHeight = Math.min(this.height, 0.4 * height);
+
+        let scale = desiredWidth / this.width;
+        scale = Math.min(scale, desiredHeight / this.height)
+
+        if (this.scaleX != scale) {
+            this.setScale(scale);
+        }
     }
 
     protected updateOverride() {
@@ -213,6 +235,8 @@ export class Boss extends Enemy {
     }
 
     public destroy(fromScene?: boolean) {
+        if (this.scene)
+            this.scene.events.removeListener('resize', this.onBossResize, this, false);
         super.destroy(fromScene);
     }
 
@@ -264,8 +288,8 @@ export class Boss extends Enemy {
         const centerY = this.body.center.y;
 
         const ratio = this.getHealth() / this.getMaxHealth();
-        this.healthBar.displayWidth = ratio * this.height;
-        this.healthBar.x = centerX + this.width / 2;
-        this.healthBar.y = centerY + this.height / 2 - this.healthBar.displayWidth / 2;
+        this.healthBar.displayWidth = ratio * this.displayHeight;
+        this.healthBar.x = centerX + this.displayWidth / 2;
+        this.healthBar.y = centerY + this.displayHeight / 2 - this.healthBar.displayWidth / 2;
     }
 }
