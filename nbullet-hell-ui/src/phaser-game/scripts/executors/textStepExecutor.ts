@@ -4,6 +4,7 @@ import { getTextWidth } from '../../../utils';
 
 export class TextStepExecutor implements IStepExecutor {
   private finished = false;
+  private finalTouchStarted = false;
   private currentTween!: Phaser.Tweens.Tween;
   constructor(private scene: MainScene, private cancellable: boolean) {
   }
@@ -67,14 +68,14 @@ export class TextStepExecutor implements IStepExecutor {
       this.startMainText(text, lineDuration);
     }
   }
-  
+
   update() {
     if (!this.cancellable)
       return;
 
     if (this.scene.input.manager.touch)
     {
-        const pointers = this.scene.input.manager.pointers.filter(p => p && p.wasTouch && p.isDown);
+        const pointers = this.scene.input.manager.pointers.filter(p => p && p.wasTouch && p.justDown);
         if (pointers.length > 0) {
           this.finish();
           return;
@@ -84,7 +85,7 @@ export class TextStepExecutor implements IStepExecutor {
     const enter = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     const space = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     
-    if (enter.isDown || space.isDown) {
+    if (enter.isDown || space.isDown ) {
       this.finish();
     }
   }

@@ -80,7 +80,7 @@ export const simpleTextScript: SceneScript = {
             type: ScriptStepType.TextSceneStep,
             lineDuration: 2500,
             preambleDuration: 5000,
-            text: 'COSMOS INVADER\n\n' +
+            text: 'COSMOS INVADERS\n\n' +
                 'In the year 1337 Cosmic Era ' +
                 'the cosmic entity known ' +
                 'as Balin invaded The Solar system. ' +
@@ -154,13 +154,13 @@ export const simpleTextScript: SceneScript = {
         lineDuration: 2500,
         preambleDuration: 4000,
         text: 'The heroic attack of brave warriors was in vain. ' +
-            'Vessels have been defeated. Balin has preveil. ' +
-            'The human civization has been wiped our from the face ' +
-            'of the Univers and has never been seen after...' +
+            'Vessels have been defeated. Balin has prevailed. ' +
+            'The human civilization has been wiped out from the face ' +
+            'of the Universe and has never been seen after...' +
             '\n\n' +
             'THE END',
         preamble: 'You are defeated!',
-        cancellable: false,
+        cancellable: true,
         stepText: ''
     }
 }
