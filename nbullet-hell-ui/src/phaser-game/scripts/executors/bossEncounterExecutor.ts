@@ -33,7 +33,7 @@ export class BossEncounterExecutor implements IStepExecutor {
             fontSize: '24px', fill: '#FFFFFF', align: 'center',
             wordWrap: { width: width, useAdvancedWrap: false }
         });
-        instructionsText.setPosition((worldWidth - instructionsText.width) / 2, 10);
+        instructionsText.setPosition((worldWidth - instructionsText.width) / 2, 1.5 * this.scene.scoreText.height);
         this.interactionManager.registerRamCollision(this.playerManager.player, this.boss, () => {
             instructionsText.destroy();
             const { width: worldWidth } = this.scene.physics.world.bounds;
