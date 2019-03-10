@@ -29,7 +29,7 @@ export class BossEncounterExecutor implements IStepExecutor {
         this.interactionManager.registerBoss(this.boss);
         const { width: worldWidth } = bounds;
         const width = getTextWidth(worldWidth);
-        const instructionsText = this.scene.add.text(0, 0, 'The mothership\'s shilds are down! Your weapon system is down. Ram the ship, save The Human Race!', {
+        const instructionsText = this.scene.add.text(0, 0, 'The mothership\'s shields are down! Your weapon system is down. Ram the ship, save The Human Race!', {
             fontSize: '24px', fill: '#FFFFFF', align: 'center',
             wordWrap: { width: width, useAdvancedWrap: false }
         });

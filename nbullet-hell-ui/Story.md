@@ -19,12 +19,12 @@ You are one of them...
 ##Intro crawling text end
 
 ##Intro cutscene:
-- Multiple white cosmic ships are fighting alliens
+- Multiple white cosmic ships are fighting aliens
 - Player's ship is different
 - Allied ships - bubble text on Death
-  - Argh!!!
-  - For my people!!!
-  - For Humanity
+ - Argh!!!
+ - For my people!!!
+ - For Humanity
 - almost all allied ships defeated
 ##Intro cutscene end
 
@@ -63,14 +63,9 @@ The heroic deeds of the chosen few will be never forgotten.
 Balin has never been seen ever after... Or did he?
 ...
 
-THE END
-- Cheerful music
-
-##Defeat epilogue:
-The heroic attack of brave warriors was in vain.
-Vessels have been defeated. Balin has preveil.
-The human civization has been wiped our from the face
-of the Univers and has never been seen after...
+THE ENDBalin has prevailed.
+The human civilization has been wiped out from the face
+of the Universe and has never been seen after...
 
 THE END
 - Sad music
