@@ -2,12 +2,39 @@ export type SceneScript = {
     playerPosition: [number, number];
     playerHealth: number;
     steps: ScriptStep[];
+    gameOverStep?: ScriptStep;
 }
 
-export type ScriptStep = {
+export type ScriptStep = EliminationStep | TextSceneStep | FadeStep | ScriptStepBase;
+
+export type ScriptStepBase = {
     delay: number | undefined;
     stepText: string;
-    enemies: EnemyConfig[]
+    type: ScriptStepType;
+}
+
+export type EliminationStep = {
+    enemies: EnemyConfig[];
+} & ScriptStepBase;
+
+export type TextSceneStep = {
+    lineDuration: number,
+    preambleDuration: number,
+    text: string,
+    preamble: string,
+    cancellable: boolean
+} & ScriptStepBase;
+
+export type FadeStep = {
+    duration: number,
+    show: boolean
+} & ScriptStepBase;
+
+export enum ScriptStepType {
+    EliminationStep,
+    TextSceneStep,
+    FadeStep,
+    LastBossStep
 }
 
 export type EnemyConfig = {

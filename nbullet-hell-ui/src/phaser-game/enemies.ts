@@ -35,14 +35,14 @@ export class Enemies {
     }
 
     addBoss(x: number, y: number, startRotatePosition: number,
-        angularSpeed: number, health: number, fireModifier: number) {
+        angularSpeed: number, health: number, fireModifier: number, showHealth: boolean = true) {
         const boss = new Boss(this.scene, this.effectsManager, x, y, angularSpeed, health, fireModifier);
         boss.rotation = startRotatePosition;
         this.group.add(boss, true);
         boss.body.setCircle(boss.height/2, boss.width/2 - boss.height/2, 0);
         boss.body.updateCenter();
         boss.setCollideWorldBounds(true);
-        boss.showHealth();
+        showHealth && boss.showHealth();
         //NOTE: hack to update boss health potision
         this.scene.time.addEvent({
             delay: 1,
@@ -164,12 +164,13 @@ export class Enemy extends ObjectWithHealth {
         }
     }
 
-    protected kill() {
+    public kill() {
         this.destroy();
     }
 }
 
 export class Boss extends Enemy {
+    private killTimer?: Phaser.Time.TimerEvent;
     private weapon45!: Weapon;
     private weapon135!: Weapon;
     private weapon225!: Weapon;
@@ -227,7 +228,8 @@ export class Boss extends Enemy {
     protected updateOverride() {
         if (this.body)
             this.setVelocity(0);
-        if (!this.active || this.isFinished()) return;
+        if (!this.active || this.isFinished())
+            return;
         this.setRotation(this.rotation + this.angularSpeed);
         this.weapons.forEach(weapon => {
             weapon.fire();
@@ -237,6 +239,8 @@ export class Boss extends Enemy {
     public destroy(fromScene?: boolean) {
         if (this.scene)
             this.scene.events.removeListener('resize', this.onBossResize, this, false);
+        if (this.killTimer)
+            this.killTimer.destroy();
         super.destroy(fromScene);
     }
 
@@ -244,13 +248,17 @@ export class Boss extends Enemy {
         return 2000;
     }
 
-    protected kill() {
+    public kill() {
+        if (this.killTimer) {
+            return;
+        }
+
         this.resizeHealth();
         this.setActive(false);
         this.setAngularVelocity(0);
-        const event = this.scene.time.addEvent({
-            repeat: 10,
-            delay: 500,
+        this.killTimer = this.scene.time.addEvent({
+            repeat: 50,
+            delay: 100,
             callback: () => {
                 if (!this.body)
                     return;
@@ -260,7 +268,7 @@ export class Boss extends Enemy {
 
                 this.effectsManager.playAnimationCraftExplosion(x, y);
                 this.effectsManager.playSoundBossExplosion();
-                if (event.getProgress() >= event.getRepeatCount())
+                if (this.killTimer!.getProgress() >= this.killTimer!.getRepeatCount())
                     this.destroy();
             },
         });

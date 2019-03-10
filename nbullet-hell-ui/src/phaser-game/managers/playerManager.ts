@@ -13,9 +13,10 @@ export class PlayerManager {
     private playerOriginalSize: [number, number] = [256, 256];
     private playerScale = 0.2;
     private bulletScale = 0.65;
-    private volume = 0.1;
     //in ms
     private fireInterval = 100;
+
+    private invicible = false;
     constructor(private scene: Scene) {
     }
 
@@ -58,6 +59,10 @@ export class PlayerManager {
         return player;
     }
 
+    public setInvicibility() {
+        this.invicible = true;
+    }
+
     public resizePlayer() {
         const width = this.scene.physics.world.bounds.width;
         let desiredWidth = Math.min(this.playerBar.width, 0.75 * width);
@@ -70,21 +75,50 @@ export class PlayerManager {
 
         this.playerBar.x = centerX - (this.playerBar.width * scaleRatio - this.playerBar.displayWidth)/2;
         this.playerBar.y = height - 3 * this.playerBar.displayHeight;
+        this.playerBar.setVisible(!this.invicible);
     }
 
     hitWithBullet(bulletObject: GameObjects.GameObject) {
-        this.player.hitWithBullet();
+        if (!this.invicible)
+            this.player.hitWithBullet();
         this.resizePlayer();
     }
 
-    updatePlayerControl() {
-        if (this.handleTouch())
+    updatePlayerControl(weaponActivated: boolean = true) {
+        if (!this.player.active || this.handleTouch(weaponActivated))
             return;
 
-        this.handleKeyboard();
+        this.handleKeyboard(weaponActivated);
     }
 
-    private handleKeyboard() {
+    disablePlayer() {
+        this.stopPlayer();
+        this.player.weapon.group.getChildren()
+            .forEach(i => (<Phaser.Physics.Arcade.Image>i).setVisible(false));
+        this.player.setVisible(false);
+        this.playerBar.setVisible(false);
+        this.player.setActive(false);
+        this.hideControlElements();
+    }
+
+    stopPlayer() {
+        if (!this.player.body)
+            return;
+        this.player.setVelocity(0);
+        this.player.setAngularVelocity(0);
+    }
+    enablePlayer() {
+        this.player.weapon.group.toggleVisible();
+        this.player.setVisible(true);
+        this.playerBar.setVisible(true);
+        this.player.setActive(true);
+        this.player.weapon.group.getChildren()
+            .forEach(i => (<Phaser.Physics.Arcade.Image>i).setVisible(true));
+        this.drawControlElements();
+        
+    }
+
+    private handleKeyboard(weaponActivated: boolean) {
         const cursor = this.scene.input.keyboard.createCursorKeys();
         const space = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         const keyW = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
@@ -135,14 +169,14 @@ export class PlayerManager {
             }
         }
 
-        if (space.isDown) {
+        if (space.isDown && weaponActivated) {
             this.player.weapon.fire();
         }
 
         return true;
     }
 
-    private handleTouch() {
+    private handleTouch(weaponActivated: boolean) {
         if (!this.scene.input.manager.touch)
             return false;
 
@@ -156,9 +190,9 @@ export class PlayerManager {
         const aimPointers: Phaser.Input.Pointer[] = [];
 
         pointers.forEach(p => {
-            if (distance(mc.x, mc.y, p.x, p.y) <= mc.radius + mc.invisibleExtension) {
+            if (distance(mc.x, mc.y, p.x, p.y) <= mc.realRadius) {
                 movementPointers.push(p);
-            } else if (distance(ac.x, ac.y, p.x, p.y) <= ac.radius + ac.invisibleExtension) {
+            } else if (distance(ac.x, ac.y, p.x, p.y) <= ac.realRadius) {
                 aimPointers.push(p);
             }
         });
@@ -166,7 +200,7 @@ export class PlayerManager {
         if (movementPointers.length > 0) {
             const p = movementPointers[0];
             let direction = new Phaser.Math.Vector2(p.x - mc.x, p.y - mc.y);
-            const modifier = 0.3 + 0.7 * direction.length() / (mc.radius + mc.invisibleExtension); 
+            const modifier = 0.3 + 0.7 * direction.length() / (mc.realRadius); 
             direction = direction.normalize();
 
             this.player.setVelocityX(this.playerVelocity * modifier * direction.x);
@@ -181,14 +215,14 @@ export class PlayerManager {
             direction = direction.normalize();
             const rotation = Math.atan2(direction.y, direction.x);
             this.player.setRotation(rotation + Math.PI / 2);
-            this.player.weapon.fire();
+            weaponActivated && this.player.weapon.fire();
         }
 
         return aimPointers.length > 0 || movementPointers.length > 0;
     }
 
     public drawControlElements() {
-        if (!this.scene.input.manager.touch)
+        if (!this.scene.input.manager.touch || !this.player || !this.player.visible)
             return;
 
         const width = this.scene.physics.world.bounds.width;
@@ -205,5 +239,10 @@ export class PlayerManager {
         this.controlCircles = this.scene.add.graphics({ fillStyle: { color: 0x808080, alpha: 0.3 } });
         this.controlCircles.fillCircleShape(movementCircle);
         this.controlCircles.fillCircleShape(aimCircle);
+    }
+
+    public hideControlElements() {
+        if (this.controlCircles)
+            this.controlCircles.destroy();
     }
  }

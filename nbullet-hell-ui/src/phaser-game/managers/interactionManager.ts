@@ -5,6 +5,7 @@ import { PlayerManager } from './playerManager';
 import { MainScene } from '../main-scene';
 import { Weapon } from '../weapons/weapon';
 import { GameObjects } from 'phaser';
+import { Player } from '../player';
 
 export class InteractionManager {
     constructor(private scene: MainScene, private effectsManager: EffectsManager, private playerManager: PlayerManager, private enemies: Enemies) {
@@ -41,6 +42,14 @@ export class InteractionManager {
             playerWeaponGroup, this.onEnemyHit);
         this.scene.physics.add.overlap(boss,
             playerWeaponGroup, this.onEnemyHit);
+    }
+
+    registerRamCollision(player: Player, boss: Boss, onCollusion: () => void) {
+        this.scene.physics.add.collider(player, boss, () => {
+            boss.kill();
+            player.setVisible(false);
+            onCollusion();
+        });
     }
 
     registerEnemy(enemy: Enemy, weapon: Weapon) {
@@ -95,8 +104,11 @@ export class InteractionManager {
 
     onEnemyHit(enemy: GameObjects.GameObject, playerBullet: GameObjects.GameObject) {
         //The object is already destroyed
-        if (!enemy.active || !playerBullet.active)
+        if (!enemy.active || !playerBullet.active) {
+            if (playerBullet.body)
+                playerBullet.destroy();
             return;
+        }
 
         const enemyObject = enemy as Enemy;
         enemyObject.hitByBullet(playerBullet);

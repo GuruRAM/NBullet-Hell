@@ -1,6 +1,6 @@
 import { PlayerManager } from './managers/playerManager';
-import { SceneScriptExecutor } from "./scripts/sceneScript";
-import { gameScript, simpleGameScript } from './scripts/gameScript';
+import { SceneScriptExecutor } from "./scripts/sceneScriptExecutor";
+import { gameScript, simpleGameScript, simpleTextScript } from './scripts/gameScript';
 import { EffectsManager } from './managers/effectsManager';
 
 export class MainScene extends Phaser.Scene {
@@ -53,7 +53,8 @@ export class MainScene extends Phaser.Scene {
             document.removeEventListener("touchend", this.onTouchEnd);
         });
 
-        const script = this.input.manager.touch ? simpleGameScript : gameScript; 
+        const script = simpleTextScript;
+        // this.input.manager.touch ? simpleGameScript : gameScript; 
         this.scriptExecutor = new SceneScriptExecutor(script, this.effectsManager,
             this.playerManager, this);
         
@@ -64,21 +65,24 @@ export class MainScene extends Phaser.Scene {
     }
 
     update() {
-        this.scriptExecutor.update();    
-        if (this.scriptExecutor.isFinished()) {
-            if (this.playerManager.player.isFinished()) {
-                this.effectsManager.playSoundLose();
-                this.gameOverSequence('GAME OVER');
-            } else {
+        this.scriptExecutor.update();
+        const scriptStatus = this.scriptExecutor.getScriptStatus();   
+        if (scriptStatus.isFinished) {
+            if (scriptStatus.isWin) {
                 this.effectsManager.playSoundWin();
-                this.gameOverSequence('VICTORY');
+                this.scriptExecutor.showScore();
+                this.gameOverSequence('VICTORY');                
+            } else {
+                this.effectsManager.playSoundLose();
+                this.scriptExecutor.showScore();
+                this.gameOverSequence('GAME OVER');
             }
         }
     }
 
     gameOverSequence(text: string = 'GAME OVER') {
         this.gameOver = this.add.text(0, 0, text, { fontSize: '72px', fill: '#FFFFFF' });
-        let instructions = `ENTER${this.input.manager.touch ? ' / TAP' : ''}`;
+        let instructions = `PRESS ENTER${this.input.manager.touch ? ' / TAP' : ''}`;
         this.continue = this.add.text(0, 0, instructions, { fontSize: '26px', fill: '#FFFFFF' });
         this.resizeGameOverText();
         //TODO: Capture the ENTER event and exit the game
